@@ -15,9 +15,10 @@ import { useAuth } from "@/lib/auth";
 type Search = { redirect?: string };
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): Search => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): Search => {
+    const value = search["redirect"];
+    return typeof value === "string" ? { redirect: value } : {};
+  },
   head: () => ({
     meta: [
       { title: "Sign in — KATISHA BUS" },
