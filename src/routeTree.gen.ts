@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as TicketsRouteImport } from './routes/tickets'
 import { Route as BookingBookingIdRouteImport } from './routes/booking.$bookingId'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -50,6 +56,7 @@ const TripsTripIdRoute = TripsTripIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/notifications': typeof NotificationsRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/notifications': typeof NotificationsRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/notifications': typeof NotificationsRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/notifications'
     | '/search'
     | '/tickets'
     | '/booking/$bookingId'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/notifications'
     | '/search'
     | '/tickets'
     | '/booking/$bookingId'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/notifications'
     | '/search'
     | '/tickets'
     | '/booking/$bookingId'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  NotificationsRoute: typeof NotificationsRoute
   SearchRoute: typeof SearchRoute
   TicketsRoute: typeof TicketsRoute
   BookingBookingIdRoute: typeof BookingBookingIdRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  NotificationsRoute: NotificationsRoute,
   SearchRoute: SearchRoute,
   TicketsRoute: TicketsRoute,
   BookingBookingIdRoute: BookingBookingIdRoute,
