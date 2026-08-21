@@ -138,7 +138,7 @@ function TripPage() {
         _seat_ids: selected,
         _passenger_name: name.trim(),
         _passenger_phone: phone.trim(),
-        _passenger_email: email.trim() || null,
+        _passenger_email: email.trim(),
       });
       if (error) throw error;
       return data as unknown as { id: string; booking_ref: string };
