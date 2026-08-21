@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  search={item.to === "/search" ? { date: todayISO(), pax: 1 } : undefined}
+                  search={item.to === "/search" ? { date: todayISO(), pax: 1 } : {}}
                   className={cn(
                     "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                     active
@@ -132,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                search={item.to === "/search" ? { date: todayISO(), pax: 1 } : undefined}
+                search={item.to === "/search" ? { date: todayISO(), pax: 1 } : {}}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2.5 text-[10px] font-semibold",
                   active ? "text-primary" : "text-muted-foreground",
