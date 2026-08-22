@@ -107,6 +107,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               Agencies
             </Link>
+            {isStaff ? (
+              <Link
+                to="/admin"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                )}
+              >
+                Dashboard
+              </Link>
+            ) : null}
           </nav>
 
           <div className="flex items-center gap-2">
