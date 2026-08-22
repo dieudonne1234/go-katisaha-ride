@@ -1,9 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, Home, LogOut, Search, Ticket, User, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { BrandWordmark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
+import { myRolesQuery } from "@/lib/admin-queries";
 import { useAuth } from "@/lib/auth";
 import { todayISO } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -60,6 +62,10 @@ export function ConnectionPill() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: roles } = useQuery({ ...myRolesQuery, enabled: Boolean(user) });
+  const isStaff = (roles ?? []).some(
+    (r) => r.role === "SUPER_ADMIN" || (r.role === "AGENCY_ADMIN" && r.agency_id),
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -101,6 +107,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               Agencies
             </Link>
+            {isStaff ? (
+              <Link
+                to="/admin"
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                )}
+              >
+                Dashboard
+              </Link>
+            ) : null}
           </nav>
 
           <div className="flex items-center gap-2">
