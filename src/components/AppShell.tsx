@@ -60,6 +60,10 @@ export function ConnectionPill() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: roles } = useQuery({ ...myRolesQuery, enabled: Boolean(user) });
+  const isStaff = (roles ?? []).some(
+    (r) => r.role === "SUPER_ADMIN" || (r.role === "AGENCY_ADMIN" && r.agency_id),
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
