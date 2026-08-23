@@ -75,7 +75,38 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [sentConfirm, setSentConfirm] = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resending, setResending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  async function resendConfirmation() {
+    if (!emailRe.test(email.trim())) {
+      const message = "Enter your email address first.";
+      setFormError(message);
+      toast.error(message);
+      return;
+    }
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setFormError(null);
+      setSentConfirm(true);
+      toast.success("Confirmation email sent again");
+    } catch (error) {
+      const message = friendlyError(
+        error instanceof Error ? error.message : "Could not resend the email",
+      );
+      setFormError(message);
+      toast.error(message);
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading && user) {
@@ -87,6 +118,7 @@ function AuthPage() {
     setMode(next);
     setFormError(null);
     setSentConfirm(false);
+    setNeedsConfirm(false);
   }
 
   function validate(): string | null {
@@ -132,15 +164,16 @@ function AuthPage() {
         if (error) throw error;
         if (!data.session) {
           setSentConfirm(true);
+          setNeedsConfirm(true);
           toast.success("Check your email to confirm your account");
         } else {
           toast.success("Account created");
         }
       }
     } catch (error) {
-      const message = friendlyError(
-        error instanceof Error ? error.message : "Something went wrong",
-      );
+      const raw = error instanceof Error ? error.message : "Something went wrong";
+      if (raw.toLowerCase().includes("email not confirmed")) setNeedsConfirm(true);
+      const message = friendlyError(raw);
       setFormError(message);
       toast.error(message);
     } finally {
@@ -195,6 +228,18 @@ function AuthPage() {
                 We sent a confirmation link to <strong>{email}</strong>. Click it to activate your
                 account, then sign in.
               </div>
+            ) : null}
+
+            {needsConfirm ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={resending}
+                onClick={() => void resendConfirmation()}
+              >
+                {resending ? "Sending…" : "Resend confirmation email"}
+              </Button>
             ) : null}
 
             {formError ? (
