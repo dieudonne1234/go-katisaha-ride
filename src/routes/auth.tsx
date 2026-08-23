@@ -250,11 +250,18 @@ function AuthPage() {
                   id="password"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                 />
+                {mode === "signup" ? (
+                  <p className="text-xs text-muted-foreground">
+                    At least 8 characters. Avoid common passwords — they are rejected for your
+                    safety.
+                  </p>
+                ) : null}
               </div>
 
               <Button type="submit" className="w-full" size="lg" disabled={busy}>
