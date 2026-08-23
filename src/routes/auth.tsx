@@ -230,6 +230,18 @@ function AuthPage() {
               </div>
             ) : null}
 
+            {needsConfirm ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={resending}
+                onClick={() => void resendConfirmation()}
+              >
+                {resending ? "Sending…" : "Resend confirmation email"}
+              </Button>
+            ) : null}
+
             {formError ? (
               <div
                 role="alert"
