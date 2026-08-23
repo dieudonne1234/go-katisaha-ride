@@ -44,6 +44,26 @@ function safePath(value: string | undefined): string {
   return value;
 }
 
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function friendlyError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("known to be weak") || m.includes("pwned"))
+    return "That password appears in known data breaches. Please choose a stronger, unique one.";
+  if (m.includes("invalid login credentials"))
+    return "Wrong email or password. If you just registered, confirm your email first.";
+  if (m.includes("email not confirmed"))
+    return "Your email isn't confirmed yet. Check your inbox for the confirmation link.";
+  if (m.includes("user already registered") || m.includes("already been registered"))
+    return "An account with this email already exists — sign in instead.";
+  if (m.includes("password should be at least"))
+    return "Password must be at least 6 characters.";
+  if (m.includes("invalid") && m.includes("email")) return "Please enter a valid email address.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Too many attempts. Please wait a minute and try again.";
+  return message;
+}
+
 function AuthPage() {
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
@@ -55,6 +75,7 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [sentConfirm, setSentConfirm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -62,21 +83,50 @@ function AuthPage() {
     }
   }, [user, loading, redirect, navigate]);
 
+  function switchMode(next: "signin" | "signup") {
+    setMode(next);
+    setFormError(null);
+    setSentConfirm(false);
+  }
+
+  function validate(): string | null {
+    if (!emailRe.test(email.trim())) return "Please enter a valid email address.";
+    if (password.length < 8) return "Password must be at least 8 characters.";
+    if (mode === "signup") {
+      if (fullName.trim().length < 2) return "Please enter your full name.";
+      if (fullName.trim().length > 100) return "Full name is too long.";
+      const cleanPhone = phone.replace(/[\s-]/g, "");
+      if (!/^\+?\d{9,15}$/.test(cleanPhone))
+        return "Enter a valid phone number, e.g. +250788123456.";
+    }
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setFormError(null);
+    const invalid = validate();
+    if (invalid) {
+      setFormError(invalid);
+      toast.error(invalid);
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
         if (error) throw error;
         toast.success("Welcome back to KATISHA BUS");
       } else {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim().toLowerCase(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName, phone },
+            data: { full_name: fullName.trim(), phone: phone.replace(/\s/g, "") },
           },
         });
         if (error) throw error;
@@ -88,22 +138,34 @@ function AuthPage() {
         }
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      const message = friendlyError(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
+      setFormError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
   }
 
   async function handleReset() {
-    if (!email) {
-      toast.error("Enter your email first");
+    if (!emailRe.test(email.trim())) {
+      const message = "Enter your email address first.";
+      setFormError(message);
+      toast.error(message);
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) toast.error(error.message);
-    else toast.success("Password reset link sent");
+    if (error) {
+      const message = friendlyError(error.message);
+      setFormError(message);
+      toast.error(message);
+    } else {
+      setFormError(null);
+      toast.success("Password reset link sent");
+    }
   }
 
   return (
