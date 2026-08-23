@@ -164,6 +164,7 @@ function AuthPage() {
         if (error) throw error;
         if (!data.session) {
           setSentConfirm(true);
+          setNeedsConfirm(true);
           toast.success("Check your email to confirm your account");
         } else {
           toast.success("Account created");
