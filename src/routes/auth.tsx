@@ -118,6 +118,7 @@ function AuthPage() {
     setMode(next);
     setFormError(null);
     setSentConfirm(false);
+    setNeedsConfirm(false);
   }
 
   function validate(): string | null {
