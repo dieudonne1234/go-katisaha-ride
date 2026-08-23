@@ -171,9 +171,9 @@ function AuthPage() {
         }
       }
     } catch (error) {
-      const message = friendlyError(
-        error instanceof Error ? error.message : "Something went wrong",
-      );
+      const raw = error instanceof Error ? error.message : "Something went wrong";
+      if (raw.toLowerCase().includes("email not confirmed")) setNeedsConfirm(true);
+      const message = friendlyError(raw);
       setFormError(message);
       toast.error(message);
     } finally {
