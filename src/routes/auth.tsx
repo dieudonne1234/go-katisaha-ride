@@ -183,7 +183,7 @@ function AuthPage() {
 
         <Card className="shadow-card">
           <CardContent className="space-y-5 p-6">
-            <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")}>
+            <Tabs value={mode} onValueChange={(v) => switchMode(v as "signin" | "signup")}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
                 <TabsTrigger value="signup">Register</TabsTrigger>
@@ -197,7 +197,16 @@ function AuthPage() {
               </div>
             ) : null}
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            {formError ? (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive"
+              >
+                {formError}
+              </div>
+            ) : null}
+
+            <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               {mode === "signup" ? (
                 <>
                   <div className="space-y-1.5">
