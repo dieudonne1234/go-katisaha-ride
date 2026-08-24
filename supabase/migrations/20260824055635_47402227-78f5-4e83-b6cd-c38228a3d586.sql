@@ -1,0 +1,14 @@
+GRANT EXECUTE ON FUNCTION public.my_agency_id() TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.create_booking(bigint, bigint[], text, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.pay_booking(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.cancel_booking(uuid) TO authenticated;
+GRANT SELECT, UPDATE ON public.bookings TO authenticated;
+GRANT SELECT ON public.booking_seats TO authenticated, anon;
+GRANT SELECT ON public.tickets TO authenticated;
+GRANT UPDATE ON public.tickets TO authenticated;
+GRANT SELECT ON public.payments TO authenticated;
+GRANT SELECT, UPDATE ON public.notifications TO authenticated;
+GRANT SELECT ON public.user_roles TO authenticated;
+GRANT SELECT ON public.audit_logs TO authenticated;
+GRANT ALL ON public.bookings, public.booking_seats, public.tickets, public.payments, public.notifications, public.user_roles, public.audit_logs TO service_role;
