@@ -15,8 +15,10 @@ import { Route as AgenciesRouteImport } from './routes/agencies'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as TicketsRouteImport } from './routes/tickets'
+import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as BookingBookingIdRouteImport } from './routes/booking.$bookingId'
 import { Route as TripsTripIdRouteImport } from './routes/trips.$tripId'
 
@@ -50,6 +52,11 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -59,6 +66,11 @@ const TicketsRoute = TicketsRouteImport.update({
   id: '/tickets',
   path: '/tickets',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
+  getParentRoute: () => AuthRoute,
 } as any)
 const BookingBookingIdRoute = BookingBookingIdRouteImport.update({
   id: '/booking/$bookingId',
@@ -75,11 +87,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/agencies': typeof AgenciesRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
 }
@@ -87,11 +101,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/agencies': typeof AgenciesRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
 }
@@ -100,11 +116,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/agencies': typeof AgenciesRoute
-  '/auth': typeof AuthRoute
+  '/auth': typeof AuthRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/tickets': typeof TicketsRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
 }
@@ -117,8 +135,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/notifications'
     | '/profile'
+    | '/reset-password'
     | '/search'
     | '/tickets'
+    | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
   fileRoutesByTo: FileRoutesByTo
@@ -129,8 +149,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/notifications'
     | '/profile'
+    | '/reset-password'
     | '/search'
     | '/tickets'
+    | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
   id:
@@ -141,8 +163,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/notifications'
     | '/profile'
+    | '/reset-password'
     | '/search'
     | '/tickets'
+    | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
   fileRoutesById: FileRoutesById
@@ -151,9 +175,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AgenciesRoute: typeof AgenciesRoute
-  AuthRoute: typeof AuthRoute
+  AuthRoute: typeof AuthRouteWithChildren
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   TicketsRoute: typeof TicketsRoute
   BookingBookingIdRoute: typeof BookingBookingIdRoute
@@ -204,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -217,6 +249,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tickets'
       preLoaderRoute: typeof TicketsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/booking/$bookingId': {
       id: '/booking/$bookingId'
@@ -235,13 +274,24 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthRouteChildren {
+  AuthConfirmRoute: typeof AuthConfirmRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthConfirmRoute: AuthConfirmRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AgenciesRoute: AgenciesRoute,
-  AuthRoute: AuthRoute,
+  AuthRoute: AuthRouteWithChildren,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   TicketsRoute: TicketsRoute,
   BookingBookingIdRoute: BookingBookingIdRoute,

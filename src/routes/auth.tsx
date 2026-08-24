@@ -91,7 +91,7 @@ function AuthPage() {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
       });
       if (error) throw error;
       setFormError(null);
@@ -157,7 +157,7 @@ function AuthPage() {
           email: email.trim().toLowerCase(),
           password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${window.location.origin}/auth/confirm`,
             data: { full_name: fullName.trim(), phone: phone.replace(/\s/g, "") },
           },
         });
