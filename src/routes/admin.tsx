@@ -225,7 +225,15 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="verify">Verify ticket</TabsTrigger>
             <TabsTrigger value="revenue">Revenue</TabsTrigger>
+            {isSuper ? <TabsTrigger value="access">Permissions</TabsTrigger> : null}
           </TabsList>
+
+          {isSuper ? (
+            <TabsContent value="access" className="mt-4">
+              <AccessManager />
+            </TabsContent>
+          ) : null}
+
 
           <TabsContent value="bookings" className="mt-4 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
