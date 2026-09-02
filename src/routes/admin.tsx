@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BadgeCheck, Banknote, QrCode, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
@@ -19,6 +20,9 @@ import {
   findTicketByCode,
   markTicketUsed,
   myRolesQuery,
+  staffDirectoryQuery,
+  grantRole,
+  revokeRole,
   type AdminBooking,
 } from "@/lib/admin-queries";
 
@@ -520,6 +524,136 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
           </CardContent>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+function AccessManager() {
+  const queryClient = useQueryClient();
+  const { data: agencies } = useQuery(agenciesQuery);
+  const { data: staff, isLoading } = useQuery(staffDirectoryQuery);
+  const [filter, setFilter] = useState("");
+  const [pending, setPending] = useState<string | null>(null);
+
+  const mutate = useMutation({
+    mutationFn: async (fn: () => Promise<void>) => fn(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
+      toast.success("Permissions updated");
+      setPending(null);
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Could not update permissions");
+      setPending(null);
+    },
+  });
+
+  const rows = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return (staff ?? []).filter(
+      (s) =>
+        !q ||
+        s.full_name.toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q),
+    );
+  }, [staff, filter]);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="space-y-1 p-5">
+          <h2 className="font-display text-lg font-bold">Roles &amp; permissions</h2>
+          <p className="text-sm text-muted-foreground">
+            Super admins control every agency. Assign an agency admin so they can only manage
+            bookings, tickets and revenue for their own agency.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Input
+        placeholder="Search staff by name or email"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        className="max-w-sm"
+      />
+
+      {isLoading ? (
+        <Skeleton className="h-40 w-full rounded-xl" />
+      ) : (
+        <div className="space-y-3">
+          {rows.map((person) => {
+            const isSuperUser = person.roles.some((r) => r.role === "SUPER_ADMIN");
+            const agencyRole = person.roles.find((r) => r.role === "AGENCY_ADMIN");
+            const busy = pending === person.id;
+            return (
+              <Card key={person.id}>
+                <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
+                  <div className="min-w-48">
+                    <p className="font-semibold">{person.full_name || "Unnamed user"}</p>
+                    <p className="text-xs text-muted-foreground">{person.email ?? "—"}</p>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {isSuperUser ? <Badge>Super admin</Badge> : null}
+                      {agencyRole ? (
+                        <Badge variant="secondary">
+                          Agency admin ·{" "}
+                          {(agencies ?? []).find((a) => a.id === agencyRole.agency_id)?.name ??
+                            "unassigned"}
+                        </Badge>
+                      ) : null}
+                      {!isSuperUser && !agencyRole ? (
+                        <Badge variant="outline">Passenger</Badge>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+                      disabled={busy}
+                      value={agencyRole?.agency_id ?? ""}
+                      onChange={(e) => {
+                        setPending(person.id);
+                        const value = e.target.value;
+                        mutate.mutate(() =>
+                          value
+                            ? grantRole(person.id, "AGENCY_ADMIN", Number(value))
+                            : revokeRole(person.id, "AGENCY_ADMIN"),
+                        );
+                      }}
+                    >
+                      <option value="">No agency access</option>
+                      {(agencies ?? []).map((a) => (
+                        <option key={a.id} value={a.id}>
+                          Admin · {a.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Button
+                      size="sm"
+                      variant={isSuperUser ? "outline" : "default"}
+                      disabled={busy}
+                      onClick={() => {
+                        setPending(person.id);
+                        mutate.mutate(() =>
+                          isSuperUser
+                            ? revokeRole(person.id, "SUPER_ADMIN")
+                            : grantRole(person.id, "SUPER_ADMIN", null),
+                        );
+                      }}
+                    >
+                      {isSuperUser ? "Remove super admin" : "Make super admin"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          {rows.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">No accounts found.</p>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
