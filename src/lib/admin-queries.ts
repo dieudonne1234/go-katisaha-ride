@@ -153,3 +153,49 @@ export async function markTicketUsed(ticketId: string) {
     .eq("id", ticketId);
   if (error) throw error;
 }
+
+export type StaffMember = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  roles: { role: StaffRole["role"]; agency_id: number | null }[];
+};
+
+export const staffDirectoryQuery = queryOptions({
+  queryKey: ["admin", "staff"],
+  queryFn: async (): Promise<StaffMember[]> => {
+    const [{ data: profiles, error: pErr }, { data: roles, error: rErr }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, phone").order("created_at"),
+      supabase.from("user_roles").select("user_id, role, agency_id"),
+    ]);
+    if (pErr) throw pErr;
+    if (rErr) throw rErr;
+    return (profiles ?? []).map((p) => ({
+      ...p,
+      roles: (roles ?? [])
+        .filter((r) => r.user_id === p.id)
+        .map((r) => ({ role: r.role as StaffRole["role"], agency_id: r.agency_id })),
+    }));
+  },
+});
+
+export async function grantRole(
+  userId: string,
+  role: StaffRole["role"],
+  agencyId: number | null,
+) {
+  const { error } = await supabase
+    .from("user_roles")
+    .insert({ user_id: userId, role, agency_id: role === "AGENCY_ADMIN" ? agencyId : null });
+  if (error) throw error;
+}
+
+export async function revokeRole(userId: string, role: StaffRole["role"]) {
+  const { error } = await supabase
+    .from("user_roles")
+    .delete()
+    .eq("user_id", userId)
+    .eq("role", role);
+  if (error) throw error;
+}
