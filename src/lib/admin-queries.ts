@@ -187,7 +187,10 @@ export async function grantRole(
 ) {
   const { error } = await supabase
     .from("user_roles")
-    .insert({ user_id: userId, role, agency_id: role === "AGENCY_ADMIN" ? agencyId : null });
+    .upsert(
+      { user_id: userId, role, agency_id: role === "AGENCY_ADMIN" ? agencyId : null },
+      { onConflict: "user_id,role" },
+    );
   if (error) throw error;
 }
 
