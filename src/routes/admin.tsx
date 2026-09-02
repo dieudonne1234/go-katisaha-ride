@@ -2,7 +2,17 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BadgeCheck, Banknote, QrCode, ShieldCheck, Ticket as TicketIcon } from "lucide-react";
+import {
+  BadgeCheck,
+  Banknote,
+  Bus,
+  CalendarPlus,
+  QrCode,
+  Route,
+  ShieldCheck,
+  Ticket as TicketIcon,
+  Trash2,
+} from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -12,14 +22,26 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
-import { formatDate, formatRwf, formatTime } from "@/lib/format";
-import { agenciesQuery } from "@/lib/queries";
+import { formatDate, formatRwf, formatTime, todayISO } from "@/lib/format";
+import { agenciesQuery, stationsQuery } from "@/lib/queries";
 import {
   agencyBookingsQuery,
   agencyPaymentsQuery,
   findTicketByCode,
   markTicketUsed,
   myRolesQuery,
+  agencyBusesQuery,
+  agencyRoutesQuery,
+  agencyTripsQuery,
+  createBus,
+  createRoute,
+  createTrip,
+  deleteBus,
+  deleteRoute,
+  deleteTrip,
+  toggleRoute,
+  updateBusStatus,
+  updateTripStatus,
   staffDirectoryQuery,
   grantRole,
   revokeRole,
@@ -119,7 +141,7 @@ function AdminPage() {
 
 function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number | null }) {
   const queryClient = useQueryClient();
-  const { data: agencies } = useQuery({ ...agenciesQuery, enabled: isSuper });
+  const { data: agencies } = useQuery(agenciesQuery);
   const [scope, setScope] = useState<number | "ALL">(isSuper ? "ALL" : (agencyId as number));
 
   const { data: bookings, isLoading } = useQuery(agencyBookingsQuery(scope));
@@ -164,6 +186,14 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
     .filter((b) => b.status === "CONFIRMED")
     .reduce((s, b) => s + b.seat_count, 0);
   const pending = (bookings ?? []).filter((b) => b.status === "PENDING").length;
+
+  const agencyOptions = useMemo(
+    () =>
+      (agencies ?? [])
+        .filter((a) => (scope === "ALL" ? true : a.id === scope))
+        .map((a) => ({ id: a.id, name: a.name })),
+    [agencies, scope],
+  );
 
   const agencyLabel =
     scope === "ALL"
@@ -228,7 +258,10 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
           <TabsList>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="verify">Verify ticket</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
+            <TabsTrigger value="buses">Buses</TabsTrigger>
+            <TabsTrigger value="routes">Routes</TabsTrigger>
+            <TabsTrigger value="trips">Trips</TabsTrigger>
+            <TabsTrigger value="revenue">Reports</TabsTrigger>
             {isSuper ? <TabsTrigger value="access">Permissions</TabsTrigger> : null}
           </TabsList>
 
@@ -285,6 +318,18 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
                 void queryClient.invalidateQueries({ queryKey: ["admin", "bookings"] });
               }}
             />
+          </TabsContent>
+
+          <TabsContent value="buses" className="mt-4">
+            <BusesPanel scope={scope} agencies={agencyOptions} />
+          </TabsContent>
+
+          <TabsContent value="routes" className="mt-4">
+            <RoutesPanel scope={scope} agencies={agencyOptions} />
+          </TabsContent>
+
+          <TabsContent value="trips" className="mt-4">
+            <TripsPanel scope={scope} agencies={agencyOptions} />
           </TabsContent>
 
           <TabsContent value="revenue" className="mt-4 space-y-3">
@@ -651,6 +696,437 @@ function AccessManager() {
           })}
           {rows.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">No accounts found.</p>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type AgencyOption = { id: number; name: string };
+
+function useAdminMutation(onDone?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (fn: () => Promise<unknown>) => fn(),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin"] });
+      toast.success("Saved");
+      onDone?.();
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Could not save the change"),
+  });
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      {label}
+      {children}
+    </label>
+  );
+}
+
+const selectClass =
+  "h-9 rounded-lg border border-input bg-background px-2 text-sm font-normal normal-case text-foreground";
+
+function AgencyPicker({
+  agencies,
+  value,
+  onChange,
+}: {
+  agencies: AgencyOption[];
+  value: number | "";
+  onChange: (v: number) => void;
+}) {
+  if (agencies.length <= 1) return null;
+  return (
+    <Field label="Agency">
+      <select
+        className={selectClass}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      >
+        <option value="">Select agency</option>
+        {agencies.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.name}
+          </option>
+        ))}
+      </select>
+    </Field>
+  );
+}
+
+function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const { data: buses, isLoading } = useQuery(agencyBusesQuery(scope));
+  const mutate = useAdminMutation();
+  const [agency, setAgency] = useState<number | "">(agencies[0]?.id ?? "");
+  const [busNumber, setBusNumber] = useState("");
+  const [plate, setPlate] = useState("");
+  const [type, setType] = useState("Standard");
+  const [capacity, setCapacity] = useState(30);
+
+  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agencyId) return toast.error("Choose an agency first");
+    if (!busNumber.trim() || !plate.trim()) return toast.error("Bus number and plate are required");
+    mutate.mutate(async () => {
+      await createBus({
+        agency_id: agencyId,
+        bus_number: busNumber.trim(),
+        plate_number: plate.trim().toUpperCase(),
+        bus_type: type,
+        seat_capacity: capacity,
+      });
+      setBusNumber("");
+      setPlate("");
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="font-display text-lg font-bold">Add a bus</h2>
+          <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
+            <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
+            <Field label="Bus number">
+              <Input value={busNumber} onChange={(e) => setBusNumber(e.target.value)} placeholder="HRZ-07" className="w-32" />
+            </Field>
+            <Field label="Plate">
+              <Input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="RAD 123 B" className="w-36" />
+            </Field>
+            <Field label="Type">
+              <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
+                <option>Standard</option>
+                <option>Executive</option>
+                <option>Coaster</option>
+              </select>
+            </Field>
+            <Field label="Seats">
+              <Input
+                type="number"
+                min={8}
+                max={80}
+                value={capacity}
+                onChange={(e) => setCapacity(Number(e.target.value))}
+                className="w-24"
+              />
+            </Field>
+            <Button type="submit" disabled={mutate.isPending}>
+              <Bus className="size-4" /> Add bus
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <Skeleton className="h-40 w-full rounded-xl" />
+      ) : (buses ?? []).length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-sm text-muted-foreground">
+            No buses registered yet.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {(buses ?? []).map((b) => (
+            <Card key={b.id}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="font-semibold">
+                    {b.bus_number} · {b.plate_number}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {b.bus_type} · {b.seat_capacity} seats
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>{b.status}</Badge>
+                  <select
+                    className={selectClass}
+                    value={b.status}
+                    onChange={(e) =>
+                      mutate.mutate(() =>
+                        updateBusStatus(b.id, e.target.value as "ACTIVE" | "INACTIVE" | "MAINTENANCE"),
+                      )
+                    }
+                  >
+                    <option value="ACTIVE">Active</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => mutate.mutate(() => deleteBus(b.id))}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const { data: routes, isLoading } = useQuery(agencyRoutesQuery(scope));
+  const { data: stations } = useQuery(stationsQuery);
+  const mutate = useAdminMutation();
+  const [agency, setAgency] = useState<number | "">(agencies[0]?.id ?? "");
+  const [origin, setOrigin] = useState<number | "">("");
+  const [destination, setDestination] = useState<number | "">("");
+  const [distance, setDistance] = useState(100);
+  const [duration, setDuration] = useState(120);
+
+  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agencyId) return toast.error("Choose an agency first");
+    if (!origin || !destination || origin === destination)
+      return toast.error("Pick a different origin and destination");
+    mutate.mutate(() =>
+      createRoute({
+        agency_id: agencyId,
+        origin_station_id: Number(origin),
+        destination_station_id: Number(destination),
+        distance_km: distance,
+        duration_minutes: duration,
+      }),
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="font-display text-lg font-bold">Add a route</h2>
+          <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
+            <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
+            <Field label="From">
+              <select className={selectClass} value={origin} onChange={(e) => setOrigin(Number(e.target.value))}>
+                <option value="">Origin</option>
+                {(stations ?? []).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city} · {s.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="To">
+              <select
+                className={selectClass}
+                value={destination}
+                onChange={(e) => setDestination(Number(e.target.value))}
+              >
+                <option value="">Destination</option>
+                {(stations ?? []).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.city} · {s.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Distance (km)">
+              <Input type="number" min={1} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-28" />
+            </Field>
+            <Field label="Duration (min)">
+              <Input type="number" min={10} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-28" />
+            </Field>
+            <Button type="submit" disabled={mutate.isPending}>
+              <Route className="size-4" /> Add route
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <Skeleton className="h-40 w-full rounded-xl" />
+      ) : (
+        <div className="space-y-2">
+          {(routes ?? []).map((r) => (
+            <Card key={r.id}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="font-semibold">
+                    {r.origin.city} → {r.destination.city}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.origin.name} → {r.destination.name} · {r.distance_km} km ·{" "}
+                    {r.duration_minutes} min
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={r.is_active ? "default" : "secondary"}>
+                    {r.is_active ? "Active" : "Paused"}
+                  </Badge>
+                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}>
+                    {r.is_active ? "Pause" : "Activate"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteRoute(r.id))}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(routes ?? []).length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-sm text-muted-foreground">
+                No routes yet.
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const today = todayISO();
+  const { data: trips, isLoading } = useQuery(agencyTripsQuery(scope, today));
+  const { data: buses } = useQuery(agencyBusesQuery(scope));
+  const { data: routes } = useQuery(agencyRoutesQuery(scope));
+  const mutate = useAdminMutation();
+
+  const [agency, setAgency] = useState<number | "">(agencies[0]?.id ?? "");
+  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+  const [busId, setBusId] = useState<number | "">("");
+  const [routeId, setRouteId] = useState<number | "">("");
+  const [date, setDate] = useState(today);
+  const [departure, setDeparture] = useState("08:00");
+  const [arrival, setArrival] = useState("11:00");
+  const [price, setPrice] = useState(5000);
+
+  const busOptions = (buses ?? []).filter((b) => !agencyId || b.agency_id === agencyId);
+  const routeOptions = (routes ?? []).filter((r) => !agencyId || r.agency_id === agencyId);
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!agencyId) return toast.error("Choose an agency first");
+    if (!busId || !routeId) return toast.error("Pick a bus and a route");
+    mutate.mutate(() =>
+      createTrip({
+        agency_id: agencyId,
+        bus_id: Number(busId),
+        route_id: Number(routeId),
+        travel_date: date,
+        departure_time: departure,
+        arrival_time: arrival,
+        price_rwf: price,
+      }),
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="p-5">
+          <h2 className="font-display text-lg font-bold">Schedule a trip</h2>
+          <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
+            <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
+            <Field label="Bus">
+              <select className={selectClass} value={busId} onChange={(e) => setBusId(Number(e.target.value))}>
+                <option value="">Select bus</option>
+                {busOptions.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.bus_number} ({b.seat_capacity})
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Route">
+              <select className={selectClass} value={routeId} onChange={(e) => setRouteId(Number(e.target.value))}>
+                <option value="">Select route</option>
+                {routeOptions.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.origin.city} → {r.destination.city}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Date">
+              <Input type="date" value={date} min={today} onChange={(e) => setDate(e.target.value)} className="w-40" />
+            </Field>
+            <Field label="Departs">
+              <Input type="time" value={departure} onChange={(e) => setDeparture(e.target.value)} className="w-28" />
+            </Field>
+            <Field label="Arrives">
+              <Input type="time" value={arrival} onChange={(e) => setArrival(e.target.value)} className="w-28" />
+            </Field>
+            <Field label="Price (RWF)">
+              <Input type="number" min={100} step={100} value={price} onChange={(e) => setPrice(Number(e.target.value))} className="w-32" />
+            </Field>
+            <Button type="submit" disabled={mutate.isPending}>
+              <CalendarPlus className="size-4" /> Schedule
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <Skeleton className="h-40 w-full rounded-xl" />
+      ) : (
+        <div className="space-y-2">
+          {(trips ?? []).map((t) => (
+            <Card key={t.id}>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="font-semibold">
+                    {t.route.origin.city} → {t.route.destination.city}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
+                    {formatTime(t.arrival_time)} · {t.bus.bus_number} · {formatRwf(t.price_rwf)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    className={selectClass}
+                    value={t.status}
+                    onChange={(e) =>
+                      mutate.mutate(() =>
+                        updateTripStatus(
+                          t.id,
+                          e.target.value as
+                            | "SCHEDULED"
+                            | "BOARDING"
+                            | "DEPARTED"
+                            | "COMPLETED"
+                            | "CANCELLED",
+                        ),
+                      )
+                    }
+                  >
+                    {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map((s) => (
+                      <option key={s} value={s}>
+                        {s.charAt(0) + s.slice(1).toLowerCase()}
+                      </option>
+                    ))}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteTrip(t.id))}>
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {(trips ?? []).length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-sm text-muted-foreground">
+                No upcoming trips scheduled.
+              </CardContent>
+            </Card>
           ) : null}
         </div>
       )}
