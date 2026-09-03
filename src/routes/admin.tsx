@@ -42,10 +42,16 @@ import {
   toggleRoute,
   updateBusStatus,
   updateTripStatus,
+  updateBus,
+  updateRoute,
+  updateTrip,
   staffDirectoryQuery,
   grantRole,
   revokeRole,
   type AdminBooking,
+  type AdminBus,
+  type AdminRoute,
+  type AdminTrip,
 } from "@/lib/admin-queries";
 
 export const Route = createFileRoute("/admin")({
@@ -333,6 +339,15 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
           </TabsContent>
 
           <TabsContent value="revenue" className="mt-4 space-y-3">
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportBookingsCsv(filtered, agencyLabel)}
+              >
+                Export CSV
+              </Button>
+            </div>
             <Card>
               <CardContent className="grid gap-4 p-6 sm:grid-cols-3">
                 <div>
@@ -767,6 +782,7 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const [plate, setPlate] = useState("");
   const [type, setType] = useState("Standard");
   const [capacity, setCapacity] = useState(30);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
 
@@ -837,37 +853,61 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
           {(buses ?? []).map((b) => (
             <Card key={b.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {b.bus_number} · {b.plate_number}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {b.bus_type} · {b.seat_capacity} seats
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>{b.status}</Badge>
-                  <select
-                    className={selectClass}
-                    value={b.status}
-                    onChange={(e) =>
-                      mutate.mutate(() =>
-                        updateBusStatus(b.id, e.target.value as "ACTIVE" | "INACTIVE" | "MAINTENANCE"),
-                      )
+                {editing === b.id ? (
+                  <BusEditor
+                    bus={b}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateBus(b.id, patch);
+                        setEditing(null);
+                      })
                     }
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="INACTIVE">Inactive</option>
-                  </select>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => mutate.mutate(() => deleteBus(b.id))}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {b.bus_number} · {b.plate_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.bus_type} · {b.seat_capacity} seats
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>
+                        {b.status}
+                      </Badge>
+                      <select
+                        className={selectClass}
+                        value={b.status}
+                        onChange={(e) =>
+                          mutate.mutate(() =>
+                            updateBusStatus(
+                              b.id,
+                              e.target.value as "ACTIVE" | "INACTIVE" | "MAINTENANCE",
+                            ),
+                          )
+                        }
+                      >
+                        <option value="ACTIVE">Active</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </select>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(b.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteBus(b.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -886,6 +926,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
   const [destination, setDestination] = useState<number | "">("");
   const [distance, setDistance] = useState(100);
   const [duration, setDuration] = useState(120);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
 
@@ -956,26 +997,54 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
           {(routes ?? []).map((r) => (
             <Card key={r.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {r.origin.city} → {r.destination.city}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.origin.name} → {r.destination.name} · {r.distance_km} km ·{" "}
-                    {r.duration_minutes} min
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={r.is_active ? "default" : "secondary"}>
-                    {r.is_active ? "Active" : "Paused"}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}>
-                    {r.is_active ? "Pause" : "Activate"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteRoute(r.id))}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                {editing === r.id ? (
+                  <RouteEditor
+                    route={r}
+                    stations={stations ?? []}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateRoute(r.id, patch);
+                        setEditing(null);
+                      })
+                    }
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {r.origin.city} → {r.destination.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {r.origin.name} → {r.destination.name} · {r.distance_km} km ·{" "}
+                        {r.duration_minutes} min
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={r.is_active ? "default" : "secondary"}>
+                        {r.is_active ? "Active" : "Paused"}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}
+                      >
+                        {r.is_active ? "Pause" : "Activate"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(r.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteRoute(r.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -1007,6 +1076,7 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const [departure, setDeparture] = useState("08:00");
   const [arrival, setArrival] = useState("11:00");
   const [price, setPrice] = useState(5000);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const busOptions = (buses ?? []).filter((b) => !agencyId || b.agency_id === agencyId);
   const routeOptions = (routes ?? []).filter((r) => !agencyId || r.agency_id === agencyId);
@@ -1081,43 +1151,71 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
           {(trips ?? []).map((t) => (
             <Card key={t.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {t.route.origin.city} → {t.route.destination.city}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
-                    {formatTime(t.arrival_time)} · {t.bus.bus_number} · {formatRwf(t.price_rwf)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    className={selectClass}
-                    value={t.status}
-                    onChange={(e) =>
-                      mutate.mutate(() =>
-                        updateTripStatus(
-                          t.id,
-                          e.target.value as
-                            | "SCHEDULED"
-                            | "BOARDING"
-                            | "DEPARTED"
-                            | "COMPLETED"
-                            | "CANCELLED",
-                        ),
-                      )
+                {editing === t.id ? (
+                  <TripEditor
+                    trip={t}
+                    buses={busOptions}
+                    routes={routeOptions}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateTrip(t.id, patch);
+                        setEditing(null);
+                      })
                     }
-                  >
-                    {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map((s) => (
-                      <option key={s} value={s}>
-                        {s.charAt(0) + s.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteTrip(t.id))}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {t.route.origin.city} → {t.route.destination.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
+                        {formatTime(t.arrival_time)} · {t.bus.bus_number} ·{" "}
+                        {formatRwf(t.price_rwf)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className={selectClass}
+                        value={t.status}
+                        onChange={(e) =>
+                          mutate.mutate(() =>
+                            updateTripStatus(
+                              t.id,
+                              e.target.value as
+                                | "SCHEDULED"
+                                | "BOARDING"
+                                | "DEPARTED"
+                                | "COMPLETED"
+                                | "CANCELLED",
+                            ),
+                          )
+                        }
+                      >
+                        {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map(
+                          (s) => (
+                            <option key={s} value={s}>
+                              {s.charAt(0) + s.slice(1).toLowerCase()}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(t.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteTrip(t.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -1132,4 +1230,313 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
       )}
     </div>
   );
+}
+
+type Station = { id: number; name: string; city: string };
+
+function EditorActions({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
+  return (
+    <div className="flex items-end gap-2">
+      <Button type="submit" size="sm" disabled={pending}>
+        Save
+      </Button>
+      <Button type="button" size="sm" variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function BusEditor({
+  bus,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  bus: AdminBus;
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: { bus_number: string; plate_number: string; bus_type: string }) => void;
+}) {
+  const [busNumber, setBusNumber] = useState(bus.bus_number);
+  const [plate, setPlate] = useState(bus.plate_number);
+  const [type, setType] = useState(bus.bus_type);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busNumber.trim() || !plate.trim()) {
+          toast.error("Bus number and plate are required");
+          return;
+        }
+        onSave({
+          bus_number: busNumber.trim(),
+          plate_number: plate.trim().toUpperCase(),
+          bus_type: type,
+        });
+      }}
+    >
+      <Field label="Bus number">
+        <Input value={busNumber} onChange={(e) => setBusNumber(e.target.value)} className="w-32" />
+      </Field>
+      <Field label="Plate">
+        <Input value={plate} onChange={(e) => setPlate(e.target.value)} className="w-36" />
+      </Field>
+      <Field label="Type">
+        <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
+          <option>Standard</option>
+          <option>Executive</option>
+          <option>Coaster</option>
+        </select>
+      </Field>
+      <p className="text-xs text-muted-foreground">
+        Seat map is fixed at {bus.seat_capacity} seats.
+      </p>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
+
+function RouteEditor({
+  route,
+  stations,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  route: AdminRoute;
+  stations: Station[];
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: {
+    origin_station_id: number;
+    destination_station_id: number;
+    distance_km: number;
+    duration_minutes: number;
+  }) => void;
+}) {
+  const [origin, setOrigin] = useState(route.origin_station_id);
+  const [destination, setDestination] = useState(route.destination_station_id);
+  const [distance, setDistance] = useState(route.distance_km);
+  const [duration, setDuration] = useState(route.duration_minutes);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!origin || !destination || origin === destination) {
+          toast.error("Pick a different origin and destination");
+          return;
+        }
+        onSave({
+          origin_station_id: origin,
+          destination_station_id: destination,
+          distance_km: distance,
+          duration_minutes: duration,
+        });
+      }}
+    >
+      <Field label="From">
+        <select
+          className={selectClass}
+          value={origin}
+          onChange={(e) => setOrigin(Number(e.target.value))}
+        >
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.city} · {s.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="To">
+        <select
+          className={selectClass}
+          value={destination}
+          onChange={(e) => setDestination(Number(e.target.value))}
+        >
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.city} · {s.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Distance (km)">
+        <Input
+          type="number"
+          min={1}
+          value={distance}
+          onChange={(e) => setDistance(Number(e.target.value))}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Duration (min)">
+        <Input
+          type="number"
+          min={10}
+          value={duration}
+          onChange={(e) => setDuration(Number(e.target.value))}
+          className="w-28"
+        />
+      </Field>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
+
+function TripEditor({
+  trip,
+  buses,
+  routes,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  trip: AdminTrip;
+  buses: AdminBus[];
+  routes: AdminRoute[];
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: {
+    bus_id: number;
+    route_id: number;
+    travel_date: string;
+    departure_time: string;
+    arrival_time: string;
+    price_rwf: number;
+  }) => void;
+}) {
+  const [busId, setBusId] = useState(trip.bus_id);
+  const [routeId, setRouteId] = useState(trip.route_id);
+  const [date, setDate] = useState(trip.travel_date);
+  const [departure, setDeparture] = useState(trip.departure_time.slice(0, 5));
+  const [arrival, setArrival] = useState(trip.arrival_time.slice(0, 5));
+  const [price, setPrice] = useState(trip.price_rwf);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busId || !routeId) {
+          toast.error("Pick a bus and a route");
+          return;
+        }
+        onSave({
+          bus_id: busId,
+          route_id: routeId,
+          travel_date: date,
+          departure_time: departure,
+          arrival_time: arrival,
+          price_rwf: price,
+        });
+      }}
+    >
+      <Field label="Bus">
+        <select
+          className={selectClass}
+          value={busId}
+          onChange={(e) => setBusId(Number(e.target.value))}
+        >
+          {buses.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.bus_number} ({b.seat_capacity})
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Route">
+        <select
+          className={selectClass}
+          value={routeId}
+          onChange={(e) => setRouteId(Number(e.target.value))}
+        >
+          {routes.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.origin.city} → {r.destination.city}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Date">
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-40"
+        />
+      </Field>
+      <Field label="Departs">
+        <Input
+          type="time"
+          value={departure}
+          onChange={(e) => setDeparture(e.target.value)}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Arrives">
+        <Input
+          type="time"
+          value={arrival}
+          onChange={(e) => setArrival(e.target.value)}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Price (RWF)">
+        <Input
+          type="number"
+          min={100}
+          step={100}
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          className="w-32"
+        />
+      </Field>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
+
+function exportBookingsCsv(bookings: AdminBooking[], label: string) {
+  if (bookings.length === 0) {
+    toast.error("Nothing to export yet");
+    return;
+  }
+  const header = [
+    "Booking ref",
+    "Status",
+    "Passenger",
+    "Phone",
+    "Agency",
+    "Route",
+    "Travel date",
+    "Departure",
+    "Seats",
+    "Amount (RWF)",
+  ];
+  const rows = bookings.map((b) => [
+    b.booking_ref,
+    b.status,
+    b.passenger_name,
+    b.passenger_phone,
+    b.trip.agency.name,
+    `${b.trip.route.origin.city} - ${b.trip.route.destination.city}`,
+    b.trip.travel_date,
+    b.trip.departure_time,
+    String(b.seat_count),
+    String(b.total_amount),
+  ]);
+  const csv = [header, ...rows]
+    .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `katisha-report-${label.toLowerCase().replace(/\s+/g, "-")}-${todayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
