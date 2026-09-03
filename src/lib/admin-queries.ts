@@ -388,3 +388,41 @@ export async function deleteTrip(id: number) {
   const { error } = await supabase.from("trips").delete().eq("id", id);
   if (error) throw error;
 }
+
+/* ---------------- Edits ---------------- */
+
+export async function updateBus(
+  id: number,
+  patch: { bus_number: string; plate_number: string; bus_type: string },
+) {
+  const { error } = await supabase.from("buses").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateRoute(
+  id: number,
+  patch: {
+    origin_station_id: number;
+    destination_station_id: number;
+    distance_km: number;
+    duration_minutes: number;
+  },
+) {
+  const { error } = await supabase.from("routes").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateTrip(
+  id: number,
+  patch: {
+    bus_id: number;
+    route_id: number;
+    travel_date: string;
+    departure_time: string;
+    arrival_time: string;
+    price_rwf: number;
+  },
+) {
+  const { error } = await supabase.from("trips").update(patch).eq("id", id);
+  if (error) throw error;
+}
