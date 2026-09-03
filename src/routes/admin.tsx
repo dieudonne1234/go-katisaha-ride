@@ -1141,43 +1141,71 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
           {(trips ?? []).map((t) => (
             <Card key={t.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {t.route.origin.city} → {t.route.destination.city}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
-                    {formatTime(t.arrival_time)} · {t.bus.bus_number} · {formatRwf(t.price_rwf)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    className={selectClass}
-                    value={t.status}
-                    onChange={(e) =>
-                      mutate.mutate(() =>
-                        updateTripStatus(
-                          t.id,
-                          e.target.value as
-                            | "SCHEDULED"
-                            | "BOARDING"
-                            | "DEPARTED"
-                            | "COMPLETED"
-                            | "CANCELLED",
-                        ),
-                      )
+                {editing === t.id ? (
+                  <TripEditor
+                    trip={t}
+                    buses={busOptions}
+                    routes={routeOptions}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateTrip(t.id, patch);
+                        setEditing(null);
+                      })
                     }
-                  >
-                    {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map((s) => (
-                      <option key={s} value={s}>
-                        {s.charAt(0) + s.slice(1).toLowerCase()}
-                      </option>
-                    ))}
-                  </select>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteTrip(t.id))}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {t.route.origin.city} → {t.route.destination.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
+                        {formatTime(t.arrival_time)} · {t.bus.bus_number} ·{" "}
+                        {formatRwf(t.price_rwf)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className={selectClass}
+                        value={t.status}
+                        onChange={(e) =>
+                          mutate.mutate(() =>
+                            updateTripStatus(
+                              t.id,
+                              e.target.value as
+                                | "SCHEDULED"
+                                | "BOARDING"
+                                | "DEPARTED"
+                                | "COMPLETED"
+                                | "CANCELLED",
+                            ),
+                          )
+                        }
+                      >
+                        {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map(
+                          (s) => (
+                            <option key={s} value={s}>
+                              {s.charAt(0) + s.slice(1).toLowerCase()}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(t.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteTrip(t.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
