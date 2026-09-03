@@ -1067,6 +1067,7 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const [departure, setDeparture] = useState("08:00");
   const [arrival, setArrival] = useState("11:00");
   const [price, setPrice] = useState(5000);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const busOptions = (buses ?? []).filter((b) => !agencyId || b.agency_id === agencyId);
   const routeOptions = (routes ?? []).filter((r) => !agencyId || r.agency_id === agencyId);
