@@ -772,8 +772,8 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) return toast.error("Choose an agency first");
-    if (!busNumber.trim() || !plate.trim()) return toast.error("Bus number and plate are required");
+    if (!agencyId) { toast.error("Choose an agency first"); return; }
+    if (!busNumber.trim() || !plate.trim()) { toast.error("Bus number and plate are required"); return; }
     mutate.mutate(async () => {
       await createBus({
         agency_id: agencyId,
@@ -891,9 +891,9 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) return toast.error("Choose an agency first");
+    if (!agencyId) { toast.error("Choose an agency first"); return; }
     if (!origin || !destination || origin === destination)
-      return toast.error("Pick a different origin and destination");
+      { toast.error("Pick a different origin and destination"); return; }
     mutate.mutate(() =>
       createRoute({
         agency_id: agencyId,
@@ -1013,8 +1013,8 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) return toast.error("Choose an agency first");
-    if (!busId || !routeId) return toast.error("Pick a bus and a route");
+    if (!agencyId) { toast.error("Choose an agency first"); return; }
+    if (!busId || !routeId) { toast.error("Pick a bus and a route"); return; }
     mutate.mutate(() =>
       createTrip({
         agency_id: agencyId,
