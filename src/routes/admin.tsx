@@ -339,6 +339,15 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
           </TabsContent>
 
           <TabsContent value="revenue" className="mt-4 space-y-3">
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => exportBookingsCsv(filtered, agencyLabel)}
+              >
+                Export CSV
+              </Button>
+            </div>
             <Card>
               <CardContent className="grid gap-4 p-6 sm:grid-cols-3">
                 <div>
