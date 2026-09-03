@@ -1222,3 +1222,272 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
     </div>
   );
 }
+
+type Station = { id: number; name: string; city: string };
+
+function EditorActions({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
+  return (
+    <div className="flex items-end gap-2">
+      <Button type="submit" size="sm" disabled={pending}>
+        Save
+      </Button>
+      <Button type="button" size="sm" variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
+function BusEditor({
+  bus,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  bus: AdminBus;
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: { bus_number: string; plate_number: string; bus_type: string }) => void;
+}) {
+  const [busNumber, setBusNumber] = useState(bus.bus_number);
+  const [plate, setPlate] = useState(bus.plate_number);
+  const [type, setType] = useState(bus.bus_type);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busNumber.trim() || !plate.trim()) {
+          toast.error("Bus number and plate are required");
+          return;
+        }
+        onSave({
+          bus_number: busNumber.trim(),
+          plate_number: plate.trim().toUpperCase(),
+          bus_type: type,
+        });
+      }}
+    >
+      <Field label="Bus number">
+        <Input value={busNumber} onChange={(e) => setBusNumber(e.target.value)} className="w-32" />
+      </Field>
+      <Field label="Plate">
+        <Input value={plate} onChange={(e) => setPlate(e.target.value)} className="w-36" />
+      </Field>
+      <Field label="Type">
+        <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
+          <option>Standard</option>
+          <option>Executive</option>
+          <option>Coaster</option>
+        </select>
+      </Field>
+      <p className="text-xs text-muted-foreground">
+        Seat map is fixed at {bus.seat_capacity} seats.
+      </p>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
+
+function RouteEditor({
+  route,
+  stations,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  route: AdminRoute;
+  stations: Station[];
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: {
+    origin_station_id: number;
+    destination_station_id: number;
+    distance_km: number;
+    duration_minutes: number;
+  }) => void;
+}) {
+  const [origin, setOrigin] = useState(route.origin_station_id);
+  const [destination, setDestination] = useState(route.destination_station_id);
+  const [distance, setDistance] = useState(route.distance_km);
+  const [duration, setDuration] = useState(route.duration_minutes);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!origin || !destination || origin === destination) {
+          toast.error("Pick a different origin and destination");
+          return;
+        }
+        onSave({
+          origin_station_id: origin,
+          destination_station_id: destination,
+          distance_km: distance,
+          duration_minutes: duration,
+        });
+      }}
+    >
+      <Field label="From">
+        <select
+          className={selectClass}
+          value={origin}
+          onChange={(e) => setOrigin(Number(e.target.value))}
+        >
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.city} · {s.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="To">
+        <select
+          className={selectClass}
+          value={destination}
+          onChange={(e) => setDestination(Number(e.target.value))}
+        >
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.city} · {s.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Distance (km)">
+        <Input
+          type="number"
+          min={1}
+          value={distance}
+          onChange={(e) => setDistance(Number(e.target.value))}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Duration (min)">
+        <Input
+          type="number"
+          min={10}
+          value={duration}
+          onChange={(e) => setDuration(Number(e.target.value))}
+          className="w-28"
+        />
+      </Field>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
+
+function TripEditor({
+  trip,
+  buses,
+  routes,
+  pending,
+  onCancel,
+  onSave,
+}: {
+  trip: AdminTrip;
+  buses: AdminBus[];
+  routes: AdminRoute[];
+  pending: boolean;
+  onCancel: () => void;
+  onSave: (patch: {
+    bus_id: number;
+    route_id: number;
+    travel_date: string;
+    departure_time: string;
+    arrival_time: string;
+    price_rwf: number;
+  }) => void;
+}) {
+  const [busId, setBusId] = useState(trip.bus_id);
+  const [routeId, setRouteId] = useState(trip.route_id);
+  const [date, setDate] = useState(trip.travel_date);
+  const [departure, setDeparture] = useState(trip.departure_time.slice(0, 5));
+  const [arrival, setArrival] = useState(trip.arrival_time.slice(0, 5));
+  const [price, setPrice] = useState(trip.price_rwf);
+
+  return (
+    <form
+      className="flex w-full flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!busId || !routeId) {
+          toast.error("Pick a bus and a route");
+          return;
+        }
+        onSave({
+          bus_id: busId,
+          route_id: routeId,
+          travel_date: date,
+          departure_time: departure,
+          arrival_time: arrival,
+          price_rwf: price,
+        });
+      }}
+    >
+      <Field label="Bus">
+        <select
+          className={selectClass}
+          value={busId}
+          onChange={(e) => setBusId(Number(e.target.value))}
+        >
+          {buses.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.bus_number} ({b.seat_capacity})
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Route">
+        <select
+          className={selectClass}
+          value={routeId}
+          onChange={(e) => setRouteId(Number(e.target.value))}
+        >
+          {routes.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.origin.city} → {r.destination.city}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Date">
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-40"
+        />
+      </Field>
+      <Field label="Departs">
+        <Input
+          type="time"
+          value={departure}
+          onChange={(e) => setDeparture(e.target.value)}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Arrives">
+        <Input
+          type="time"
+          value={arrival}
+          onChange={(e) => setArrival(e.target.value)}
+          className="w-28"
+        />
+      </Field>
+      <Field label="Price (RWF)">
+        <Input
+          type="number"
+          min={100}
+          step={100}
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          className="w-32"
+        />
+      </Field>
+      <EditorActions pending={pending} onCancel={onCancel} />
+    </form>
+  );
+}
