@@ -8,7 +8,7 @@ import {
   Bus,
   CalendarPlus,
   QrCode,
-  Route,
+  Route as RouteIcon,
   ShieldCheck,
   Ticket as TicketIcon,
   Trash2,
@@ -943,7 +943,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
               <Input type="number" min={10} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-28" />
             </Field>
             <Button type="submit" disabled={mutate.isPending}>
-              <Route className="size-4" /> Add route
+              <RouteIcon className="size-4" /> Add route
             </Button>
           </form>
         </CardContent>
