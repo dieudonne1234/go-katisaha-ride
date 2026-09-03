@@ -1500,3 +1500,43 @@ function TripEditor({
     </form>
   );
 }
+
+function exportBookingsCsv(bookings: AdminBooking[], label: string) {
+  if (bookings.length === 0) {
+    toast.error("Nothing to export yet");
+    return;
+  }
+  const header = [
+    "Booking ref",
+    "Status",
+    "Passenger",
+    "Phone",
+    "Agency",
+    "Route",
+    "Travel date",
+    "Departure",
+    "Seats",
+    "Amount (RWF)",
+  ];
+  const rows = bookings.map((b) => [
+    b.booking_ref,
+    b.status,
+    b.passenger_name,
+    b.passenger_phone,
+    b.trip.agency.name,
+    `${b.trip.route.origin.city} - ${b.trip.route.destination.city}`,
+    b.trip.travel_date,
+    b.trip.departure_time,
+    String(b.seat_count),
+    String(b.total_amount),
+  ]);
+  const csv = [header, ...rows]
+    .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `katisha-report-${label.toLowerCase().replace(/\s+/g, "-")}-${todayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
