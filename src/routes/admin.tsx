@@ -843,37 +843,61 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
           {(buses ?? []).map((b) => (
             <Card key={b.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {b.bus_number} · {b.plate_number}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {b.bus_type} · {b.seat_capacity} seats
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>{b.status}</Badge>
-                  <select
-                    className={selectClass}
-                    value={b.status}
-                    onChange={(e) =>
-                      mutate.mutate(() =>
-                        updateBusStatus(b.id, e.target.value as "ACTIVE" | "INACTIVE" | "MAINTENANCE"),
-                      )
+                {editing === b.id ? (
+                  <BusEditor
+                    bus={b}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateBus(b.id, patch);
+                        setEditing(null);
+                      })
                     }
-                  >
-                    <option value="ACTIVE">Active</option>
-                    <option value="MAINTENANCE">Maintenance</option>
-                    <option value="INACTIVE">Inactive</option>
-                  </select>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => mutate.mutate(() => deleteBus(b.id))}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {b.bus_number} · {b.plate_number}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.bus_type} · {b.seat_capacity} seats
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>
+                        {b.status}
+                      </Badge>
+                      <select
+                        className={selectClass}
+                        value={b.status}
+                        onChange={(e) =>
+                          mutate.mutate(() =>
+                            updateBusStatus(
+                              b.id,
+                              e.target.value as "ACTIVE" | "INACTIVE" | "MAINTENANCE",
+                            ),
+                          )
+                        }
+                      >
+                        <option value="ACTIVE">Active</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="INACTIVE">Inactive</option>
+                      </select>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(b.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteBus(b.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
