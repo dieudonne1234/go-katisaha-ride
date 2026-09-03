@@ -42,10 +42,16 @@ import {
   toggleRoute,
   updateBusStatus,
   updateTripStatus,
+  updateBus,
+  updateRoute,
+  updateTrip,
   staffDirectoryQuery,
   grantRole,
   revokeRole,
   type AdminBooking,
+  type AdminBus,
+  type AdminRoute,
+  type AdminTrip,
 } from "@/lib/admin-queries";
 
 export const Route = createFileRoute("/admin")({
