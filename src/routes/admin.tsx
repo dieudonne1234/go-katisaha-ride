@@ -987,26 +987,54 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
           {(routes ?? []).map((r) => (
             <Card key={r.id}>
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-                <div>
-                  <p className="font-semibold">
-                    {r.origin.city} → {r.destination.city}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.origin.name} → {r.destination.name} · {r.distance_km} km ·{" "}
-                    {r.duration_minutes} min
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={r.is_active ? "default" : "secondary"}>
-                    {r.is_active ? "Active" : "Paused"}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}>
-                    {r.is_active ? "Pause" : "Activate"}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => mutate.mutate(() => deleteRoute(r.id))}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
+                {editing === r.id ? (
+                  <RouteEditor
+                    route={r}
+                    stations={stations ?? []}
+                    pending={mutate.isPending}
+                    onCancel={() => setEditing(null)}
+                    onSave={(patch) =>
+                      mutate.mutate(async () => {
+                        await updateRoute(r.id, patch);
+                        setEditing(null);
+                      })
+                    }
+                  />
+                ) : (
+                  <>
+                    <div>
+                      <p className="font-semibold">
+                        {r.origin.city} → {r.destination.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {r.origin.name} → {r.destination.name} · {r.distance_km} km ·{" "}
+                        {r.duration_minutes} min
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={r.is_active ? "default" : "secondary"}>
+                        {r.is_active ? "Active" : "Paused"}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}
+                      >
+                        {r.is_active ? "Pause" : "Activate"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(r.id)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => mutate.mutate(() => deleteRoute(r.id))}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           ))}
