@@ -917,6 +917,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
   const [destination, setDestination] = useState<number | "">("");
   const [distance, setDistance] = useState(100);
   const [duration, setDuration] = useState(120);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
 
