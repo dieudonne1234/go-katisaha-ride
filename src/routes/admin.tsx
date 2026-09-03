@@ -773,6 +773,7 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const [plate, setPlate] = useState("");
   const [type, setType] = useState("Standard");
   const [capacity, setCapacity] = useState(30);
+  const [editing, setEditing] = useState<number | null>(null);
 
   const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
 
