@@ -21,6 +21,7 @@ import { Route as TicketsRouteImport } from './routes/tickets'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as BookingBookingIdRouteImport } from './routes/booking.$bookingId'
 import { Route as TripsTripIdRouteImport } from './routes/trips.$tripId'
+import { Route as VerifyTicketCodeRouteImport } from './routes/verify.$ticketCode'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -82,6 +83,11 @@ const TripsTripIdRoute = TripsTripIdRouteImport.update({
   path: '/trips/$tripId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyTicketCodeRoute = VerifyTicketCodeRouteImport.update({
+  id: '/verify/$ticketCode',
+  path: '/verify/$ticketCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/verify/$ticketCode': typeof VerifyTicketCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/verify/$ticketCode': typeof VerifyTicketCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/auth/confirm': typeof AuthConfirmRoute
   '/booking/$bookingId': typeof BookingBookingIdRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/verify/$ticketCode': typeof VerifyTicketCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
+    | '/verify/$ticketCode'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
+    | '/verify/$ticketCode'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/auth/confirm'
     | '/booking/$bookingId'
     | '/trips/$tripId'
+    | '/verify/$ticketCode'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   TicketsRoute: typeof TicketsRoute
   BookingBookingIdRoute: typeof BookingBookingIdRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
+  VerifyTicketCodeRoute: typeof VerifyTicketCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify/$ticketCode': {
+      id: '/verify/$ticketCode'
+      path: '/verify/$ticketCode'
+      fullPath: '/verify/$ticketCode'
+      preLoaderRoute: typeof VerifyTicketCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -296,6 +316,7 @@ const rootRouteChildren: RootRouteChildren = {
   TicketsRoute: TicketsRoute,
   BookingBookingIdRoute: BookingBookingIdRoute,
   TripsTripIdRoute: TripsTripIdRoute,
+  VerifyTicketCodeRoute: VerifyTicketCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
