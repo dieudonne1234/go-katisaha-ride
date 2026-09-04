@@ -172,12 +172,22 @@ function BookingPage() {
                   {booking.tickets.map((t) => (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm"
+                      className="flex items-center gap-4 rounded-lg border border-border px-4 py-3 text-sm"
                     >
-                      <span className="font-mono font-semibold">{t.ticket_code}</span>
-                      <span className="text-muted-foreground">
-                        Seat {t.seat_label} · {t.status}
-                      </span>
+                      <TicketQr value={verifyUrl(t.ticket_code)} size={96} />
+                      <div className="min-w-0">
+                        <p className="font-mono font-semibold">{t.ticket_code}</p>
+                        <p className="text-muted-foreground">
+                          Seat {t.seat_label} · {t.status}
+                        </p>
+                        <Link
+                          to="/verify/$ticketCode"
+                          params={{ ticketCode: t.ticket_code }}
+                          className="mt-1 inline-block text-xs font-semibold text-primary underline"
+                        >
+                          Open boarding check
+                        </Link>
+                      </div>
                     </div>
                   ))}
                 </div>
