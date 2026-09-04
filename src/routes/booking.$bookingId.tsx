@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { TicketQr } from "@/components/TicketQr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +40,11 @@ const METHODS = [
   { id: "MTN_MOMO", label: "MTN Mobile Money", hint: "Dial-free push to your MTN line" },
   { id: "AIRTEL_MONEY", label: "Airtel Money", hint: "Approve the prompt on your Airtel line" },
 ] as const;
+
+function verifyUrl(code: string) {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  return `${origin}/verify/${code}`;
+}
 
 function BookingPage() {
   const { bookingId } = Route.useParams();
