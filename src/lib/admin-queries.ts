@@ -426,3 +426,87 @@ export async function updateTrip(
   const { error } = await supabase.from("trips").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+/* ---------------- Super admin: agencies & stations ---------------- */
+
+export type AdminAgency = {
+  id: number;
+  name: string;
+  code: string;
+  phone: string | null;
+  email: string | null;
+  is_active: boolean;
+};
+
+export const allAgenciesQuery = queryOptions({
+  queryKey: ["admin", "agencies"],
+  queryFn: async (): Promise<AdminAgency[]> => {
+    const { data, error } = await supabase
+      .from("agencies")
+      .select("id, name, code, phone, email, is_active")
+      .order("name");
+    if (error) throw error;
+    return (data ?? []) as AdminAgency[];
+  },
+});
+
+export async function createAgency(input: {
+  name: string;
+  code: string;
+  phone: string | null;
+  email: string | null;
+}) {
+  const { error } = await supabase.from("agencies").insert(input);
+  if (error) throw error;
+}
+
+export async function updateAgency(
+  id: number,
+  patch: { name: string; code: string; phone: string | null; email: string | null },
+) {
+  const { error } = await supabase.from("agencies").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function toggleAgency(id: number, isActive: boolean) {
+  const { error } = await supabase.from("agencies").update({ is_active: isActive }).eq("id", id);
+  if (error) throw error;
+}
+
+export type AdminStation = {
+  id: number;
+  name: string;
+  city: string;
+  code: string;
+  is_active: boolean;
+};
+
+export const allStationsQuery = queryOptions({
+  queryKey: ["admin", "stations"],
+  queryFn: async (): Promise<AdminStation[]> => {
+    const { data, error } = await supabase
+      .from("stations")
+      .select("id, name, city, code, is_active")
+      .order("city");
+    if (error) throw error;
+    return (data ?? []) as AdminStation[];
+  },
+});
+
+export async function createStation(input: { name: string; city: string; code: string }) {
+  const { error } = await supabase.from("stations").insert(input);
+  if (error) throw error;
+}
+
+export async function updateStation(
+  id: number,
+  patch: { name: string; city: string; code: string },
+) {
+  const { error } = await supabase.from("stations").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function toggleStation(id: number, isActive: boolean) {
+  const { error } = await supabase.from("stations").update({ is_active: isActive }).eq("id", id);
+  if (error) throw error;
+}
