@@ -261,21 +261,29 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
         </div>
 
         <Tabs defaultValue="bookings" className="mt-8">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="verify">Verify ticket</TabsTrigger>
             <TabsTrigger value="buses">Buses</TabsTrigger>
             <TabsTrigger value="routes">Routes</TabsTrigger>
             <TabsTrigger value="trips">Trips</TabsTrigger>
             <TabsTrigger value="revenue">Reports</TabsTrigger>
+            {isSuper ? <TabsTrigger value="network">Agencies</TabsTrigger> : null}
             {isSuper ? <TabsTrigger value="access">Permissions</TabsTrigger> : null}
           </TabsList>
+
+          {isSuper ? (
+            <TabsContent value="network" className="mt-4">
+              <NetworkManager />
+            </TabsContent>
+          ) : null}
 
           {isSuper ? (
             <TabsContent value="access" className="mt-4">
               <AccessManager />
             </TabsContent>
           ) : null}
+
 
 
           <TabsContent value="bookings" className="mt-4 space-y-4">
