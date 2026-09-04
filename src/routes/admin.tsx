@@ -46,6 +46,14 @@ import {
   updateRoute,
   updateTrip,
   staffDirectoryQuery,
+  allAgenciesQuery,
+  allStationsQuery,
+  createAgency,
+  updateAgency,
+  toggleAgency,
+  createStation,
+  updateStation,
+  toggleStation,
   grantRole,
   revokeRole,
   type AdminBooking,
@@ -1547,4 +1555,283 @@ function exportBookingsCsv(bookings: AdminBooking[], label: string) {
   a.download = `katisha-report-${label.toLowerCase().replace(/\s+/g, "-")}-${todayISO()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function NetworkManager() {
+  const qc = useQueryClient();
+  const { data: agencies } = useQuery(allAgenciesQuery);
+  const { data: stations } = useQuery(allStationsQuery);
+  const [editAgency, setEditAgency] = useState<number | null>(null);
+  const [editStation, setEditStation] = useState<number | null>(null);
+  const [aForm, setAForm] = useState({ name: "", code: "", phone: "", email: "" });
+  const [sForm, setSForm] = useState({ name: "", city: "", code: "" });
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["admin"] });
+
+  const addAgency = useMutation({
+    mutationFn: () =>
+      createAgency({
+        name: aForm.name.trim(),
+        code: aForm.code.trim().toUpperCase(),
+        phone: aForm.phone.trim() || null,
+        email: aForm.email.trim() || null,
+      }),
+    onSuccess: () => {
+      setAForm({ name: "", code: "", phone: "", email: "" });
+      toast.success("Agency added");
+      void refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveAgency = useMutation({
+    mutationFn: (v: { id: number; patch: Parameters<typeof updateAgency>[1] }) =>
+      updateAgency(v.id, v.patch),
+    onSuccess: () => {
+      setEditAgency(null);
+      toast.success("Agency updated");
+      void refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const flipAgency = useMutation({
+    mutationFn: (v: { id: number; active: boolean }) => toggleAgency(v.id, v.active),
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const addStation = useMutation({
+    mutationFn: () =>
+      createStation({
+        name: sForm.name.trim(),
+        city: sForm.city.trim(),
+        code: sForm.code.trim().toUpperCase(),
+      }),
+    onSuccess: () => {
+      setSForm({ name: "", city: "", code: "" });
+      toast.success("Station added");
+      void refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveStation = useMutation({
+    mutationFn: (v: { id: number; patch: Parameters<typeof updateStation>[1] }) =>
+      updateStation(v.id, v.patch),
+    onSuccess: () => {
+      setEditStation(null);
+      toast.success("Station updated");
+      void refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const flipStation = useMutation({
+    mutationFn: (v: { id: number; active: boolean }) => toggleStation(v.id, v.active),
+    onSuccess: refresh,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <h2 className="font-display text-lg font-bold">Bus agencies</h2>
+          <form
+            className="grid gap-2 sm:grid-cols-5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!aForm.name.trim() || !aForm.code.trim()) {
+                toast.error("Name and code are required");
+                return;
+              }
+              addAgency.mutate();
+            }}
+          >
+            <Input
+              placeholder="Agency name"
+              value={aForm.name}
+              onChange={(e) => setAForm({ ...aForm, name: e.target.value })}
+            />
+            <Input
+              placeholder="Code"
+              value={aForm.code}
+              onChange={(e) => setAForm({ ...aForm, code: e.target.value })}
+            />
+            <Input
+              placeholder="Phone"
+              value={aForm.phone}
+              onChange={(e) => setAForm({ ...aForm, phone: e.target.value })}
+            />
+            <Input
+              placeholder="Email"
+              value={aForm.email}
+              onChange={(e) => setAForm({ ...aForm, email: e.target.value })}
+            />
+            <Button type="submit" disabled={addAgency.isPending}>
+              Add agency
+            </Button>
+          </form>
+
+          <div className="space-y-2">
+            {(agencies ?? []).map((a) =>
+              editAgency === a.id ? (
+                <form
+                  key={a.id}
+                  className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-5"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const f = new FormData(e.currentTarget);
+                    saveAgency.mutate({
+                      id: a.id,
+                      patch: {
+                        name: String(f.get("name") ?? "").trim(),
+                        code: String(f.get("code") ?? "").trim().toUpperCase(),
+                        phone: String(f.get("phone") ?? "").trim() || null,
+                        email: String(f.get("email") ?? "").trim() || null,
+                      },
+                    });
+                  }}
+                >
+                  <Input name="name" defaultValue={a.name} />
+                  <Input name="code" defaultValue={a.code} />
+                  <Input name="phone" defaultValue={a.phone ?? ""} />
+                  <Input name="email" defaultValue={a.email ?? ""} />
+                  <EditorActions
+                    pending={saveAgency.isPending}
+                    onCancel={() => setEditAgency(null)}
+                  />
+                </form>
+              ) : (
+                <div
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {a.name}{" "}
+                      <span className="text-xs text-muted-foreground">({a.code})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.phone ?? "No phone"} · {a.email ?? "No email"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={a.is_active ? "default" : "secondary"}>
+                      {a.is_active ? "Active" : "Hidden"}
+                    </Badge>
+                    <Button size="sm" variant="outline" onClick={() => setEditAgency(a.id)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => flipAgency.mutate({ id: a.id, active: !a.is_active })}
+                    >
+                      {a.is_active ? "Hide" : "Show"}
+                    </Button>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-4 p-5">
+          <h2 className="font-display text-lg font-bold">Stations</h2>
+          <form
+            className="grid gap-2 sm:grid-cols-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!sForm.name.trim() || !sForm.city.trim() || !sForm.code.trim()) {
+                toast.error("Name, city and code are required");
+                return;
+              }
+              addStation.mutate();
+            }}
+          >
+            <Input
+              placeholder="Station name"
+              value={sForm.name}
+              onChange={(e) => setSForm({ ...sForm, name: e.target.value })}
+            />
+            <Input
+              placeholder="City"
+              value={sForm.city}
+              onChange={(e) => setSForm({ ...sForm, city: e.target.value })}
+            />
+            <Input
+              placeholder="Code"
+              value={sForm.code}
+              onChange={(e) => setSForm({ ...sForm, code: e.target.value })}
+            />
+            <Button type="submit" disabled={addStation.isPending}>
+              Add station
+            </Button>
+          </form>
+
+          <div className="grid gap-2 md:grid-cols-2">
+            {(stations ?? []).map((s) =>
+              editStation === s.id ? (
+                <form
+                  key={s.id}
+                  className="grid gap-2 rounded-xl border border-border p-3 sm:grid-cols-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const f = new FormData(e.currentTarget);
+                    saveStation.mutate({
+                      id: s.id,
+                      patch: {
+                        name: String(f.get("name") ?? "").trim(),
+                        city: String(f.get("city") ?? "").trim(),
+                        code: String(f.get("code") ?? "").trim().toUpperCase(),
+                      },
+                    });
+                  }}
+                >
+                  <Input name="name" defaultValue={s.name} />
+                  <Input name="city" defaultValue={s.city} />
+                  <Input name="code" defaultValue={s.code} />
+                  <EditorActions
+                    pending={saveStation.isPending}
+                    onCancel={() => setEditStation(null)}
+                  />
+                </form>
+              ) : (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-border p-3"
+                >
+                  <div>
+                    <p className="font-semibold">{s.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {s.city} · {s.code}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={s.is_active ? "default" : "secondary"}>
+                      {s.is_active ? "Active" : "Hidden"}
+                    </Badge>
+                    <Button size="sm" variant="outline" onClick={() => setEditStation(s.id)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => flipStation.mutate({ id: s.id, active: !s.is_active })}
+                    >
+                      {s.is_active ? "Hide" : "Show"}
+                    </Button>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
