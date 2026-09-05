@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { durationLabel, formatDate, formatRwf, formatTime } from "@/lib/format";
 import { getPassengerDetails, savePassengerDetails } from "@/lib/localCache";
-import { profileQuery, tripQuery, tripSeatsQuery } from "@/lib/queries";
+import { profileQuery, routeTimetableQuery, tripQuery, tripSeatsQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 type TripSearch = { pax: number };
@@ -417,5 +417,77 @@ function TripPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function RouteTimetable({
+  routeId,
+  date,
+  currentTripId,
+}: {
+  routeId: number;
+  date: string;
+  currentTripId: number;
+}) {
+  const { data, isLoading } = useQuery(routeTimetableQuery(routeId, date));
+  if (isLoading) return <Skeleton className="mb-6 h-24 w-full rounded-xl" />;
+  const trips = data ?? [];
+  if (trips.length < 2) return null;
+
+  return (
+    <Card className="mb-6">
+      <CardContent className="p-5">
+        <h2 className="font-display text-lg font-bold">Today&rsquo;s departures on this route</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {formatDate(date)} — compare times and fares before you book.
+        </p>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <th className="py-2 pr-3 font-semibold">Departs</th>
+                <th className="py-2 pr-3 font-semibold">Arrives</th>
+                <th className="py-2 pr-3 font-semibold">Agency</th>
+                <th className="py-2 pr-3 font-semibold">Seats left</th>
+                <th className="py-2 pr-3 font-semibold">Fare</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {trips.map((t) => (
+                <tr
+                  key={t.id}
+                  className={cn(
+                    "border-t border-border",
+                    t.id === currentTripId && "bg-secondary/50",
+                  )}
+                >
+                  <td className="py-2.5 pr-3 font-semibold">{formatTime(t.departure_time)}</td>
+                  <td className="py-2.5 pr-3">{formatTime(t.arrival_time)}</td>
+                  <td className="py-2.5 pr-3">{t.agency.name}</td>
+                  <td className="py-2.5 pr-3">{t.available_seats}</td>
+                  <td className="py-2.5 pr-3 font-semibold">{formatRwf(t.price_rwf)}</td>
+                  <td className="py-2.5 text-right">
+                    {t.id === currentTripId ? (
+                      <Badge variant="secondary">Selected</Badge>
+                    ) : (
+                      <Button asChild size="sm" variant="outline">
+                        <Link
+                          to="/trips/$tripId"
+                          params={{ tripId: String(t.id) }}
+                          search={{ pax: 1 }}
+                        >
+                          View
+                        </Link>
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
