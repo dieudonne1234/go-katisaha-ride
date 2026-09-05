@@ -229,6 +229,14 @@ function TripPage() {
           </CardContent>
         </Card>
 
+        <RouteTimetable
+          routeId={trip.route.id}
+          date={trip.travel_date}
+          currentTripId={trip.id}
+        />
+
+
+
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
           <Card>
             <CardContent className="p-6">
