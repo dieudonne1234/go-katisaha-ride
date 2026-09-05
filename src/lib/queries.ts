@@ -228,3 +228,42 @@ export const profileQuery = queryOptions({
     return data;
   },
 });
+
+/* ---------------- Timetable ---------------- */
+
+export function timetableQuery(date: string, agencyId: number | "ALL") {
+  return queryOptions({
+    queryKey: ["trips", "timetable", date, agencyId],
+    queryFn: async () => {
+      let q = supabase
+        .from("trips")
+        .select(TRIP_SELECT)
+        .eq("travel_date", date)
+        .in("status", ["SCHEDULED", "BOARDING"])
+        .order("departure_time")
+        .limit(200);
+      if (agencyId !== "ALL") q = q.eq("agency_id", agencyId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return attachAvailability((data ?? []) as unknown as TripRow[]);
+    },
+  });
+}
+
+export function routeTimetableQuery(routeId: number | undefined, date: string) {
+  return queryOptions({
+    queryKey: ["trips", "route-timetable", routeId, date],
+    enabled: Boolean(routeId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trips")
+        .select(TRIP_SELECT)
+        .eq("route_id", routeId!)
+        .eq("travel_date", date)
+        .in("status", ["SCHEDULED", "BOARDING"])
+        .order("departure_time");
+      if (error) throw error;
+      return attachAvailability((data ?? []) as unknown as TripRow[]);
+    },
+  });
+}
