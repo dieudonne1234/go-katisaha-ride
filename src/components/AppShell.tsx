@@ -107,6 +107,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               Agencies
             </Link>
+            <Link
+              to="/timetable"
+              search={{ date: todayISO(), agency: "ALL" as const }}
+              className={cn(
+                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                pathname.startsWith("/timetable")
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+              )}
+            >
+              Timetable
+            </Link>
             {isStaff ? (
               <Link
                 to="/admin"
