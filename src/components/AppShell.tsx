@@ -171,6 +171,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <div className="flex items-center gap-2">
             <ConnectionPill />
+            <MobileMenu isStaff={isStaff} pathname={pathname} />
             {user ? (
               <Button variant="ghost" size="sm" onClick={() => void signOut()}>
                 <LogOut className="size-4" />
