@@ -216,6 +216,85 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
+const MOBILE_EXTRA = [
+  { to: "/timetable", label: "Timetable", icon: CalendarClock },
+  { to: "/agencies", label: "Agencies", icon: Building2 },
+] as const;
+
+const MOBILE_STAFF = [
+  { to: "/stations", label: "Stations", icon: MapPin },
+  { to: "/admin", label: "Admin Dashboard", icon: ShieldCheck },
+] as const;
+
+function MobileMenu({
+  isStaff,
+  pathname,
+}: {
+  isStaff: boolean;
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const renderLink = (item: { to: string; label: string; icon: typeof Home }) => {
+    const Icon = item.icon;
+    const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+    const search =
+      item.to === "/search"
+        ? { date: todayISO(), pax: 1 }
+        : item.to === "/timetable"
+          ? { date: todayISO(), agency: "ALL" as const }
+          : {};
+    return (
+      <SheetClose asChild key={item.to}>
+        <Link
+          to={item.to}
+          search={search}
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold",
+            active
+              ? "bg-secondary text-secondary-foreground"
+              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+          )}
+        >
+          <Icon className="size-5" />
+          {item.label}
+        </Link>
+      </SheetClose>
+    );
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="sm" className="md:hidden" aria-label="Open menu">
+          <Menu className="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-72">
+        <SheetHeader>
+          <SheetTitle>All pages</SheetTitle>
+        </SheetHeader>
+        <nav className="mt-4 grid gap-1">
+          {NAV.map(renderLink)}
+          {MOBILE_EXTRA.map(renderLink)}
+          {isStaff ? (
+            <>
+              <p className="mt-3 px-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Staff
+              </p>
+              {MOBILE_STAFF.map(renderLink)}
+            </>
+          ) : (
+            <p className="mt-3 px-4 text-xs text-muted-foreground">
+              Sign in with a staff account to manage stations, buses and bookings.
+            </p>
+          )}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export function PageHeader({
   title,
   subtitle,
