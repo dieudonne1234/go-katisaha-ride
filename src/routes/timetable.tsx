@@ -156,9 +156,13 @@ function TimetablePage() {
                       <ArrowRight className="size-4 text-muted-foreground" />
                       <span>{formatTime(trip.arrival_time)}</span>
                       <span className="text-sm font-medium text-muted-foreground">
-                        {trip.route.origin.city} → {trip.route.destination.city}
+                        {trip.route.origin.name} → {trip.route.destination.name}
                       </span>
                     </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {trip.route.origin.city} ({trip.route.origin.name}) →{" "}
+                      {trip.route.destination.city} ({trip.route.destination.name})
+                    </p>
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="size-3.5" />
                       {durationLabel(trip.route.duration_minutes)} · {trip.route.distance_km} km ·{" "}
