@@ -510,3 +510,8 @@ export async function toggleStation(id: number, isActive: boolean) {
   const { error } = await supabase.from("stations").update({ is_active: isActive }).eq("id", id);
   if (error) throw error;
 }
+
+export async function deleteStation(id: number) {
+  const { error } = await supabase.from("stations").delete().eq("id", id);
+  if (error) throw error;
+}
