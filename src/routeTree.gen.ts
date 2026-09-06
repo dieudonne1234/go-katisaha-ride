@@ -17,6 +17,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as StationsRouteImport } from './routes/stations'
 import { Route as TicketsRouteImport } from './routes/tickets'
 import { Route as TimetableRouteImport } from './routes/timetable'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
@@ -64,6 +65,11 @@ const SearchRoute = SearchRouteImport.update({
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StationsRoute = StationsRouteImport.update({
+  id: '/stations',
+  path: '/stations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TicketsRoute = TicketsRouteImport.update({
   id: '/tickets',
   path: '/tickets',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/stations': typeof StationsRoute
   '/tickets': typeof TicketsRoute
   '/timetable': typeof TimetableRoute
   '/auth/confirm': typeof AuthConfirmRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/stations': typeof StationsRoute
   '/tickets': typeof TicketsRoute
   '/timetable': typeof TimetableRoute
   '/auth/confirm': typeof AuthConfirmRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
+  '/stations': typeof StationsRoute
   '/tickets': typeof TicketsRoute
   '/timetable': typeof TimetableRoute
   '/auth/confirm': typeof AuthConfirmRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reset-password'
     | '/search'
+    | '/stations'
     | '/tickets'
     | '/timetable'
     | '/auth/confirm'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reset-password'
     | '/search'
+    | '/stations'
     | '/tickets'
     | '/timetable'
     | '/auth/confirm'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/reset-password'
     | '/search'
+    | '/stations'
     | '/tickets'
     | '/timetable'
     | '/auth/confirm'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
+  StationsRoute: typeof StationsRoute
   TicketsRoute: typeof TicketsRoute
   TimetableRoute: typeof TimetableRoute
   BookingBookingIdRoute: typeof BookingBookingIdRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stations': {
+      id: '/stations'
+      path: '/stations'
+      fullPath: '/stations'
+      preLoaderRoute: typeof StationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tickets': {
@@ -333,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
+  StationsRoute: StationsRoute,
   TicketsRoute: TicketsRoute,
   TimetableRoute: TimetableRoute,
   BookingBookingIdRoute: BookingBookingIdRoute,

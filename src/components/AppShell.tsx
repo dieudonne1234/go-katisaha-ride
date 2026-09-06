@@ -120,17 +120,30 @@ export function AppShell({ children }: { children: ReactNode }) {
               Timetable
             </Link>
             {isStaff ? (
-              <Link
-                to="/admin"
-                className={cn(
-                  "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
-                  pathname.startsWith("/admin")
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
-                )}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  to="/stations"
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                    pathname.startsWith("/stations")
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                  )}
+                >
+                  Stations
+                </Link>
+                <Link
+                  to="/admin"
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+                    pathname.startsWith("/admin")
+                      ? "bg-secondary text-secondary-foreground"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+                  )}
+                >
+                  Dashboard
+                </Link>
+              </>
             ) : null}
           </nav>
 
