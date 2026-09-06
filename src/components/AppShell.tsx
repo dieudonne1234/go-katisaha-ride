@@ -1,10 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Bell, Home, LogOut, Search, Ticket, User, Wifi, WifiOff } from "lucide-react";
+import {
+  Bell,
+  CalendarClock,
+  Building2,
+  Home,
+  LogOut,
+  MapPin,
+  Menu,
+  Search,
+  ShieldCheck,
+  Ticket,
+  User,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { BrandWordmark } from "@/components/Brand";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { myRolesQuery } from "@/lib/admin-queries";
 import { useAuth } from "@/lib/auth";
 import { todayISO } from "@/lib/format";
