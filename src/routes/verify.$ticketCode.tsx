@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BadgeCheck, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { BadgeCheck, Loader2, ShieldCheck, Ticket, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 import { findTicketByCode, markTicketUsed, myRolesQuery } from "@/lib/admin-queries";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatTime } from "@/lib/format";
@@ -33,6 +34,23 @@ export const Route = createFileRoute("/verify/$ticketCode")({
   component: VerifyPage,
 });
 
+type PublicTicket = {
+  ticket_code: string;
+  seat_label: string;
+  status: string;
+  used_at: string | null;
+  booking: { booking_ref: string; passenger_name: string; status: string };
+  trip: {
+    travel_date: string;
+    departure_time: string;
+    origin_city: string;
+    origin_station: string;
+    destination_city: string;
+    destination_station: string;
+  };
+  agency: { name: string };
+};
+
 function VerifyPage() {
   const { ticketCode } = Route.useParams();
   const { user } = useAuth();
@@ -43,19 +61,31 @@ function VerifyPage() {
     (r) => r.role === "SUPER_ADMIN" || r.role === "AGENCY_ADMIN",
   );
 
+  // Public lookup — works for anyone who scans the QR code, no sign-in needed.
   const ticket = useQuery({
     queryKey: ["verify-ticket", ticketCode],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_ticket_public", { _code: ticketCode });
+      if (error) throw error;
+      return (data as unknown as PublicTicket | null) ?? null;
+    },
+  });
+
+  // Staff-only lookup to get the internal ticket id for boarding confirmation.
+  const staffTicket = useQuery({
+    queryKey: ["verify-ticket-staff", ticketCode],
     queryFn: () => findTicketByCode(ticketCode),
-    enabled: Boolean(user),
+    enabled: Boolean(user) && isStaff,
   });
 
   const board = useMutation({
     mutationFn: async () => {
-      if (!ticket.data) throw new Error("Ticket not found");
-      await markTicketUsed(ticket.data.id);
+      if (!staffTicket.data) throw new Error("Ticket not found");
+      await markTicketUsed(staffTicket.data.id);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["verify-ticket", ticketCode] });
+      void queryClient.invalidateQueries({ queryKey: ["verify-ticket-staff", ticketCode] });
       void queryClient.invalidateQueries({ queryKey: ["admin"] });
       toast.success("Boarding confirmed");
     },
@@ -72,20 +102,7 @@ function VerifyPage() {
         <h1 className="font-display text-2xl font-extrabold">Ticket verification</h1>
         <p className="mt-1 font-mono text-sm text-muted-foreground">{ticketCode}</p>
 
-        {!user ? (
-          <Card className="mt-6">
-            <CardContent className="p-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Sign in to view this ticket and confirm boarding.
-              </p>
-              <Button asChild className="mt-4">
-                <Link to="/auth" search={{ redirect: `/verify/${ticketCode}` }}>
-                  Sign in
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : ticket.isLoading ? (
+        {ticket.isLoading ? (
           <Skeleton className="mt-6 h-56 w-full rounded-xl" />
         ) : !data ? (
           <Card className="mt-6">
@@ -94,7 +111,7 @@ function VerifyPage() {
               <div className="text-sm">
                 <p className="font-semibold">Ticket not found</p>
                 <p className="text-muted-foreground">
-                  This code does not match any ticket you are allowed to see.
+                  This code does not match any KATISHA BUS ticket. Check the code and try again.
                 </p>
               </div>
             </CardContent>
@@ -112,17 +129,22 @@ function VerifyPage() {
 
               <div>
                 <p className="font-display text-xl font-bold">
-                  {data.booking.trip.route.origin.city} → {data.booking.trip.route.destination.city}
+                  {data.trip.origin_city} → {data.trip.destination_city}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {formatDate(data.booking.trip.travel_date)} ·{" "}
-                  {formatTime(data.booking.trip.departure_time)} · Seat {data.seat_label}
+                  {data.trip.origin_station} → {data.trip.destination_station}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {formatDate(data.trip.travel_date)} · {formatTime(data.trip.departure_time)} ·
+                  Seat {data.seat_label}
                 </p>
               </div>
 
               <div className="rounded-lg bg-secondary p-4 text-sm">
-                <p className="font-semibold">{data.booking.passenger_name}</p>
-                <p className="text-muted-foreground">{data.booking.passenger_phone}</p>
+                <p className="flex items-center gap-2 font-semibold">
+                  <Ticket className="size-4 text-primary" /> {data.booking.passenger_name}
+                </p>
+                <p className="mt-1 text-muted-foreground">Operated by {data.agency.name}</p>
               </div>
 
               {data.status === "USED" ? (
@@ -139,7 +161,9 @@ function VerifyPage() {
                 <Button
                   className="w-full"
                   size="lg"
-                  disabled={board.isPending || data.booking.status !== "CONFIRMED"}
+                  disabled={
+                    board.isPending || data.booking.status !== "CONFIRMED" || !staffTicket.data
+                  }
                   onClick={() => board.mutate()}
                 >
                   {board.isPending ? (
@@ -156,6 +180,20 @@ function VerifyPage() {
                 <p className="text-sm text-muted-foreground">
                   Show this page to the bus crew — they will confirm your boarding.
                 </p>
+              )}
+
+              {!user && (
+                <div className="border-t border-border pt-4 text-center text-sm text-muted-foreground">
+                  Are you bus crew?{" "}
+                  <Link
+                    to="/auth"
+                    search={{ redirect: `/verify/${ticketCode}` }}
+                    className="font-semibold text-primary underline"
+                  >
+                    Sign in
+                  </Link>{" "}
+                  to confirm boarding.
+                </div>
               )}
             </CardContent>
           </Card>
