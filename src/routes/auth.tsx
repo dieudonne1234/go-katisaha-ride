@@ -11,13 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { passwordValidation } from "@/lib/password-recovery";
 
-type Search = { redirect?: string };
+type Search = { redirect?: string; passwordReset?: boolean };
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>): Search => {
     const value = search["redirect"];
-    return typeof value === "string" ? { redirect: value } : {};
+    return { ...(typeof value === "string" ? { redirect: value } : {}), ...(search["passwordReset"] === true || search["passwordReset"] === "true" ? { passwordReset: true } : {}) };
   },
   head: () => ({
     meta: [
@@ -65,7 +66,7 @@ function friendlyError(message: string): string {
 }
 
 function AuthPage() {
-  const { redirect } = Route.useSearch();
+  const { redirect, passwordReset } = Route.useSearch();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -123,7 +124,8 @@ function AuthPage() {
 
   function validate(): string | null {
     if (!emailRe.test(email.trim())) return "Please enter a valid email address.";
-    if (password.length < 8) return "Password must be at least 8 characters.";
+    const passwordError = passwordValidation(password, mode);
+    if (passwordError) return passwordError;
     if (mode === "signup") {
       if (fullName.trim().length < 2) return "Please enter your full name.";
       if (fullName.trim().length > 100) return "Full name is too long.";
@@ -230,6 +232,8 @@ function AuthPage() {
               </div>
             ) : null}
 
+            {passwordReset ? <div role="status" className="rounded-lg bg-success/10 p-4 text-sm">Your password was updated. Sign in with your new password.</div> : null}
+
             {needsConfirm ? (
               <Button
                 type="button"
@@ -295,7 +299,7 @@ function AuthPage() {
                   id="password"
                   type="password"
                   required
-                  minLength={8}
+                  minLength={mode === "signup" ? 8 : undefined}
                   autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -315,13 +319,14 @@ function AuthPage() {
             </form>
 
             {mode === "signin" ? (
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => void handleReset()}
                 className="w-full text-center text-sm font-medium text-primary hover:underline"
               >
                 Forgot your password?
-              </button>
+              </Button>
             ) : null}
           </CardContent>
         </Card>

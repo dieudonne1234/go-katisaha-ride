@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { preparePasswordRecovery, passwordValidation, expiredResetMessage } from "@/lib/password-recovery";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -32,54 +34,27 @@ export const Route = createFileRoute("/reset-password")({
 
 function ResetPasswordPage() {
   const navigate = useNavigate();
+  const { recovering, signOut } = useAuth();
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function prepare() {
-      const url = new URL(window.location.href);
-      const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
-      const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");
-      const code = url.searchParams.get("code");
-      const accessToken = hash.get("access_token");
-      const refreshToken = hash.get("refresh_token");
-
       try {
-        if (tokenHash) {
-          const { error: err } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: "recovery",
-          });
-          if (err) throw err;
-        } else if (code) {
-          const { error: err } = await supabase.auth.exchangeCodeForSession(code);
-          if (err) throw err;
-        } else if (accessToken && refreshToken) {
-          const { error: err } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (err) throw err;
-        }
-        const { data } = await supabase.auth.getSession();
+        await preparePasswordRecovery(supabase.auth, window.location.href, recovering);
         if (cancelled) return;
-        if (!data.session) {
-          setError("This reset link has expired or was already used. Request a new one.");
-        }
+        setLinkError(null);
         setReady(true);
-      } catch (err) {
+      } catch {
         if (cancelled) return;
-        setError(
-          err instanceof Error
-            ? "This reset link has expired or was already used. Request a new one."
-            : "Could not verify the reset link.",
-        );
-        setReady(true);
+        setLinkError(expiredResetMessage);
+        setReady(false);
       }
     }
 
@@ -87,12 +62,14 @@ function ResetPasswordPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [recovering]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (!ready || busy) return;
+    const passwordError = passwordValidation(password, "reset");
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== confirm) {
@@ -101,15 +78,21 @@ function ResetPasswordPage() {
     }
     setBusy(true);
     setError(null);
-    const { error: err } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (err) {
-      setError(err.message);
-      toast.error(err.message);
-      return;
+    try {
+      const { error: err } = await supabase.auth.updateUser({ password });
+      if (err) throw err;
+      await signOut();
+      setPassword("");
+      setConfirm("");
+      toast.success("Password updated. Sign in with your new password.");
+      await navigate({ to: "/auth", search: { passwordReset: true }, replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not update your password. Please try again.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setBusy(false);
     }
-    toast.success("Password updated");
-    void navigate({ to: "/", replace: true });
   }
 
   return (
@@ -121,14 +104,15 @@ function ResetPasswordPage() {
         </div>
         <Card className="shadow-card">
           <CardContent className="space-y-4 p-6">
-            {error ? (
+            {error || linkError ? (
               <div
                 role="alert"
                 className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive"
               >
-                {error}
+                {linkError ?? error}
               </div>
             ) : null}
+            {linkError ? <Button asChild variant="outline" className="w-full"><Link to="/auth">Request a new reset link</Link></Button> : null}
             <form className="space-y-4" onSubmit={handleSubmit} noValidate>
               <div className="space-y-1.5">
                 <Label htmlFor="new-password">New password</Label>
