@@ -1509,15 +1509,15 @@ Manage Entire System
 
 Build this as a complete full-stack application, not just a visual prototype. Prioritize a clean architecture, secure role-based access, correct database relationships, working REST APIs, and a Flutter application that can communicate with the Node.js backend.
 
-This project was built with [Lovable](https://lovable.dev).
+This project is My app — KATISHA BUS.
 
-## Build with Lovable
+## Build My app
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/852e8a9f-61da-40c3-beb2-b311e7ba58f7).
+Continue developing My app in the [project editor](https://lovable.dev/projects/852e8a9f-61da-40c3-beb2-b311e7ba58f7).
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Ship faster**: describe what you want to build for My app in the project editor.
+- **Stay in sync**: every change made in the project editor is committed straight to this repository.
+- **Full ownership**: My app's code is yours. Push to `main` on GitHub and your changes sync back into the project editor, ready for your next prompt.
 
 ## Development
 
