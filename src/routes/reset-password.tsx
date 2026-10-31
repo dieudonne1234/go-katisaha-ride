@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
@@ -41,17 +41,20 @@ function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const preparation = useRef<ReturnType<typeof preparePasswordRecovery> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function prepare() {
       try {
-        await preparePasswordRecovery(supabase.auth, window.location.href, recovering);
+        preparation.current ??= preparePasswordRecovery(supabase.auth, window.location.href, recovering);
+        await preparation.current;
         if (cancelled) return;
         setLinkError(null);
         setReady(true);
       } catch {
+        preparation.current = null;
         if (cancelled) return;
         setLinkError(expiredResetMessage);
         setReady(false);
