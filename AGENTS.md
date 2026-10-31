@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Password recovery lets the auth SDK consume implicit/PKCE callbacks exactly once; manually verify only token hashes, require a recovery link/event, and sign out after updating before fresh sign-in to avoid reusing consumed links or unrelated sessions.
