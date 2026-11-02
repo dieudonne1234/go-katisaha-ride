@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { TripRecommendations } from "@/components/TripRecommendations";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -221,6 +222,7 @@ function HomePage() {
       </div>
 
       <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-12">
+        <TripRecommendations date={date} originId={from ? Number(from) : null} passengers={Number(pax)} />
         {upcoming ? (
           <section>
             <h2 className="mb-3 text-lg font-bold">Upcoming trip</h2>
