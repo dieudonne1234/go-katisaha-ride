@@ -440,8 +440,9 @@ function RouteTimetable({
   date: string;
   currentTripId: number;
 }) {
-  const { data, isLoading } = useQuery(routeTimetableQuery(routeId, date));
-  if (isLoading) return <Skeleton className="mb-6 h-24 w-full rounded-xl" />;
+  const { data, isLoading, isError, isFetching, refetch } = useQuery(routeTimetableQuery(routeId, date));
+  if (isLoading) return <div className="mb-6"><PassengerLoading label="Loading other departures…" /><Skeleton className="h-24 w-full rounded-xl" /></div>;
+  if (isError) return <div className="mb-6"><PassengerError message="Other departures could not be loaded." retry={() => void refetch()} retrying={isFetching} /></div>;
   const trips = data ?? [];
   if (trips.length < 2) return null;
 
