@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Ticket } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
+import { PassengerError, PassengerLoading } from "@/components/PassengerLoadState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,8 +30,8 @@ export const Route = createFileRoute("/tickets")({
 });
 
 function TicketsPage() {
-  const { user } = useAuth();
-  const { data, isLoading } = useQuery({ ...myBookingsQuery, enabled: Boolean(user) });
+  const { user, loading: authLoading } = useAuth();
+  const { data, isLoading, isError, isFetching, refetch } = useQuery({ ...myBookingsQuery, enabled: Boolean(user) });
 
   return (
     <AppShell>
@@ -40,7 +41,7 @@ function TicketsPage() {
           Every booking you have made with KATISHA BUS.
         </p>
 
-        {!user ? (
+        {authLoading ? <PassengerLoading label="Checking your account…" /> : !user ? (
           <Card className="mt-6">
             <CardContent className="p-6 text-center">
               <p className="text-sm text-muted-foreground">Sign in to see your tickets.</p>
@@ -53,9 +54,12 @@ function TicketsPage() {
           </Card>
         ) : isLoading ? (
           <div className="mt-6 space-y-3">
+            <PassengerLoading label="Loading your digital tickets…" />
             <Skeleton className="h-28 w-full rounded-xl" />
             <Skeleton className="h-28 w-full rounded-xl" />
           </div>
+        ) : isError ? (
+          <div className="mt-6"><PassengerError message="Your tickets could not be loaded. Check your connection and try again." retry={() => void refetch()} retrying={isFetching} /></div>
         ) : (data ?? []).length === 0 ? (
           <Card className="mt-6">
             <CardContent className="p-8 text-center">
@@ -64,6 +68,7 @@ function TicketsPage() {
               <Button asChild className="mt-4">
                 <Link to="/">Find a trip</Link>
               </Button>
+              <Button variant="ghost" className="mt-4" disabled={isFetching} onClick={() => void refetch()}>{isFetching ? "Checking…" : "Refresh tickets"}</Button>
             </CardContent>
           </Card>
         ) : (
