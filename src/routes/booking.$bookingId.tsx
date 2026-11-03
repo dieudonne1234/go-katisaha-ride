@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { PassengerError, PassengerLoading } from "@/components/PassengerLoadState";
 import { TicketQr } from "@/components/TicketQr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ function BookingPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
+          <PassengerLoading label="Loading your booking and tickets…" />
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-80 w-full rounded-xl" />
         </div>
@@ -107,6 +109,7 @@ function BookingPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             We could not load this booking. It may have been removed or belongs to another account.
           </p>
+          <PassengerError message="Check your connection and make sure you are signed in to the booking's account." retry={() => void bookingResult.refetch()} retrying={bookingResult.isFetching} />
           <Button asChild className="mt-6">
             <Link to="/">Back to home</Link>
           </Button>
@@ -175,6 +178,7 @@ function BookingPage() {
 
                 <div className="space-y-2">
                   <h2 className="font-display text-base font-bold">Your tickets</h2>
+                  {booking.tickets.length === 0 ? <div className="space-y-3"><p role="status" className="text-sm text-muted-foreground">Payment is confirmed, but your digital tickets are not available yet.</p><Button variant="outline" disabled={bookingResult.isFetching} onClick={() => void bookingResult.refetch()}>{bookingResult.isFetching ? "Checking tickets…" : "Refresh tickets"}</Button></div> : null}
                   {booking.tickets.map((t) => (
                     <div
                       key={t.id}
@@ -182,7 +186,7 @@ function BookingPage() {
                     >
                       <TicketQr value={verifyUrl(t.ticket_code)} size={96} />
                       <div className="min-w-0">
-                        <p className="font-mono font-semibold">{t.ticket_code}</p>
+                        <p className="break-all font-mono font-semibold">{t.ticket_code}</p>
                         <p className="text-muted-foreground">
                           Seat {t.seat_label} · {t.status}
                         </p>
@@ -253,6 +257,9 @@ function BookingPage() {
                     </>
                   )}
                 </Button>
+
+                {pay.isError ? <PassengerError message="Payment could not be confirmed. Check the booking status before trying another payment." retry={() => { pay.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
+                {cancel.isError ? <PassengerError message="Cancellation could not be confirmed. Refresh your booking to check its current status." retry={() => { cancel.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
 
                 <Button
                   variant="ghost"

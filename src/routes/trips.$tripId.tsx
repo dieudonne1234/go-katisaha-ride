@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { AppShell } from "@/components/AppShell";
+import { PassengerError, PassengerLoading } from "@/components/PassengerLoadState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -160,6 +161,7 @@ function TripPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
+          <PassengerLoading label="Loading your trip…" />
           <Skeleton className="h-32 w-full rounded-xl" />
           <Skeleton className="h-96 w-full rounded-xl" />
         </div>
@@ -175,6 +177,7 @@ function TripPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             This trip no longer exists or could not be loaded.
           </p>
+          <PassengerError message="Check your connection or select a different departure." retry={() => void tripResult.refetch()} retrying={tripResult.isFetching} />
           <Button asChild className="mt-6">
             <Link to="/">Back to home</Link>
           </Button>
@@ -184,7 +187,7 @@ function TripPage() {
   }
 
   const canSubmit =
-    selected.length > 0 && name.trim().length > 1 && phone.trim().length >= 8 && Boolean(user);
+    selected.length > 0 && name.trim().length > 1 && phone.trim().length >= 8 && Boolean(user) && !seatsResult.isError && !seatsResult.isFetching;
 
   return (
     <AppShell>
@@ -265,7 +268,11 @@ function TripPage() {
                 </div>
 
                 {seatsResult.isLoading ? (
-                  <Skeleton className="h-56 w-full" />
+                  <><PassengerLoading label="Checking available seats…" /><Skeleton className="h-56 w-full" /></>
+                ) : seatsResult.isError ? (
+                  <PassengerError message="The seat map could not be loaded. Your passenger details have been kept." retry={() => void seatsResult.refetch()} retrying={seatsResult.isFetching} />
+                ) : rows.length === 0 ? (
+                  <div className="space-y-3"><p role="status" className="text-sm text-muted-foreground">No seat layout is available for this bus.</p><Button variant="outline" disabled={seatsResult.isFetching} onClick={() => void seatsResult.refetch()}>Check seats again</Button></div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
                     {rows.map(([rowIndex, seats]) => (
@@ -304,6 +311,8 @@ function TripPage() {
                   </div>
                 )}
               </div>
+
+              {seatsResult.data?.length && seatsResult.data.every((seat) => seat.taken) ? <p role="status" className="mt-4 text-sm text-muted-foreground">This departure is fully booked. Choose another trip.</p> : null}
 
               <div className="mt-6 space-y-4">
                 <h3 className="font-display text-base font-bold">Passenger information</h3>
@@ -406,6 +415,8 @@ function TripPage() {
                 {booking.isPending ? "Reserving…" : "Continue to payment"}
                 <ArrowRight className="size-4" />
               </Button>
+
+              {booking.isError ? <PassengerError message="We could not reserve your seats. Your passenger details have been kept; check availability and select your seats again." retry={() => { booking.reset(); void seatsResult.refetch(); }} retrying={seatsResult.isFetching} /> : null}
 
               {user && selected.length > 0 && (name.trim().length < 2 || phone.trim().length < 8) ? (
                 <p className="text-xs text-muted-foreground">

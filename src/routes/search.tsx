@@ -4,6 +4,7 @@ import { ArrowRight, Bus, Clock, Filter, MapPin, SearchX, Users } from "lucide-r
 import { useEffect, useMemo, useState } from "react";
 
 import { AppShell, PageHeader } from "@/components/AppShell";
+import { PassengerError, PassengerLoading } from "@/components/PassengerLoadState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,7 +58,8 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const params = Route.useSearch();
   const navigate = useNavigate();
-  const { data: stations } = useQuery(stationsQuery);
+  const stationsResult = useQuery(stationsQuery);
+  const stations = stationsResult.data;
   const { data: agencies } = useQuery(agenciesQuery);
 
   const [from, setFrom] = useState(params.from ? String(params.from) : "");
@@ -200,6 +202,8 @@ function SearchPage() {
           </CardContent>
         </Card>
 
+        {stationsResult.isLoading ? <PassengerLoading label="Loading stations…" /> : stationsResult.isError ? <PassengerError message="Stations could not be loaded. Check your connection and try again." retry={() => void stationsResult.refetch()} retrying={stationsResult.isFetching} /> : stationList.length === 0 ? <p role="status" className="mb-5 text-sm text-muted-foreground">No stations are available yet.</p> : null}
+
         {ready ? (
           <>
             <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -245,19 +249,13 @@ function SearchPage() {
 
             {query.isLoading ? (
               <div className="space-y-4">
+                <PassengerLoading label="Searching available departures…" />
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="h-36 w-full rounded-xl" />
                 ))}
               </div>
             ) : query.isError ? (
-              <Card className="border-destructive/40">
-                <CardContent className="p-6 text-sm">
-                  We couldn't load departures. Check your connection and try again.
-                  <Button className="mt-4" variant="secondary" onClick={() => void query.refetch()}>
-                    Retry
-                  </Button>
-                </CardContent>
-              </Card>
+              <PassengerError message="We couldn't load departures. Check your connection and try again." retry={() => void query.refetch()} retrying={query.isFetching} />
             ) : results.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
@@ -267,6 +265,8 @@ function SearchPage() {
                     There are no departures matching these filters. Try another date, another
                     corridor, or clear the filters.
                   </p>
+                  <Button variant="outline" onClick={() => { setAgencyFilter("all"); setTimeFilter("all"); }} disabled={agencyFilter === "all" && timeFilter === "all"}>Clear filters</Button>
+                  <Button variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()}>{query.isFetching ? "Checking…" : "Check departures again"}</Button>
                 </CardContent>
               </Card>
             ) : (
