@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -452,6 +453,18 @@ function TopRoutes({ bookings }: { bookings: AdminBooking[] }) {
 }
 
 function BookingRow({ booking: b }: { booking: AdminBooking }) {
+  const qc = useQueryClient();
+  const confirmPay = useMutation({
+    mutationFn: async (method: string) => {
+      const { error } = await supabase.rpc("pay_booking", { _booking_id: b.id, _method: method });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Payment confirmed — tickets issued");
+      void qc.invalidateQueries({ queryKey: ["admin"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
@@ -490,6 +503,15 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
           <p className="text-xs text-muted-foreground">
             {b.tickets.filter((t) => t.status === "USED").length}/{b.tickets.length} boarded
           </p>
+          {b.status === "PENDING" ? (
+            <div className="mt-2 flex flex-wrap justify-end gap-1">
+              {(["MTN_MOMO", "AIRTEL_MONEY", "CASH"] as const).map((m) => (
+                <Button key={m} size="sm" variant="outline" disabled={confirmPay.isPending} onClick={() => confirmPay.mutate(m)}>
+                  Paid · {m === "MTN_MOMO" ? "MTN" : m === "AIRTEL_MONEY" ? "Airtel" : "Cash"}
+                </Button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>
@@ -1547,7 +1569,11 @@ function exportBookingsCsv(bookings: AdminBooking[], label: string) {
     String(b.total_amount),
   ]);
   const csv = [header, ...rows]
-    .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .map((r) => r.map((cell) => {
+          let v = String(cell);
+          if (/^[=+\-@\t\r]/.test(v)) v = `'${v}`;
+          return `"${v.replace(/"/g, '""')}"`;
+        }).join(","))
     .join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
