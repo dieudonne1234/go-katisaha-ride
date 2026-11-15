@@ -55,6 +55,25 @@ function BookingPage() {
   const bookingResult = useQuery(bookingQuery(bookingId));
   const booking = bookingResult.data;
 
+  const pay = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("pay_booking", {
+        _booking_id: bookingId,
+        _method: method,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
+      void queryClient.invalidateQueries({ queryKey: ["bookings", "mine"] });
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("Payment successful — your ticket is ready");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Payment failed, please try again");
+    },
+  });
+
   const cancel = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.rpc("cancel_booking", { _booking_id: bookingId });
@@ -196,7 +215,7 @@ function BookingPage() {
                 <div>
                   <h2 className="font-display text-base font-bold">Choose payment method</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Pay by mobile money; the agency confirms receipt before tickets are issued.
+                    Mobile money is simulated in this demo — no real charge is made.
                   </p>
                 </div>
 
@@ -222,20 +241,30 @@ function BookingPage() {
                   ))}
                 </div>
 
-                <div role="status" className="rounded-lg border border-border bg-secondary p-4 text-sm">
-                  Send {formatRwf(booking.total_amount)} with {METHODS.find((m) => m.id === method)?.label} to the agency, quoting reference{" "}
-                  <span className="font-mono font-semibold">{booking.booking_ref}</span>. Your tickets appear here once agency staff confirm the payment.
-                </div>
-                <Button variant="outline" className="w-full" disabled={bookingResult.isFetching} onClick={() => void bookingResult.refetch()}>
-                  {bookingResult.isFetching ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} Check payment status
+                <Button
+                  className="w-full"
+                  size="lg"
+                  disabled={pay.isPending || cancel.isPending}
+                  onClick={() => pay.mutate()}
+                >
+                  {pay.isPending ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" /> Confirming payment…
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="size-4" /> Pay {formatRwf(booking.total_amount)}
+                    </>
+                  )}
                 </Button>
 
+                {pay.isError ? <PassengerError message="Payment could not be confirmed. Check the booking status before trying another payment." retry={() => { pay.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
                 {cancel.isError ? <PassengerError message="Cancellation could not be confirmed. Refresh your booking to check its current status." retry={() => { cancel.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
 
                 <Button
                   variant="ghost"
                   className="w-full"
-                  disabled={cancel.isPending}
+                  disabled={pay.isPending || cancel.isPending}
                   onClick={() => cancel.mutate()}
                 >
                   {cancel.isPending ? "Cancelling…" : "Cancel booking"}
