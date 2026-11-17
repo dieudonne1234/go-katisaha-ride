@@ -18,6 +18,8 @@ import {
 import { useEffect, useState, type ReactNode } from "react";
 
 import { BrandWordmark } from "@/components/Brand";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useI18n, type TKey } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -33,11 +35,11 @@ import { todayISO } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/search", label: "Search", icon: Search },
-  { to: "/tickets", label: "My Tickets", icon: Ticket },
-  { to: "/notifications", label: "Alerts", icon: Bell },
-  { to: "/profile", label: "Profile", icon: User },
+  { to: "/", label: "nav.home" as TKey, icon: Home },
+  { to: "/search", label: "nav.search" as TKey, icon: Search },
+  { to: "/tickets", label: "nav.tickets" as TKey, icon: Ticket },
+  { to: "/notifications", label: "nav.alerts" as TKey, icon: Bell },
+  { to: "/profile", label: "nav.profile" as TKey, icon: User },
 ] as const;
 
 function useOnline() {
@@ -56,17 +58,19 @@ function useOnline() {
 }
 
 export function OfflineBanner() {
+  const { t } = useI18n();
   const online = useOnline();
   if (online) return null;
   return (
     <div className="flex items-center justify-center gap-2 bg-warning px-4 py-2 text-xs font-semibold text-warning-foreground">
       <WifiOff className="size-3.5" />
-      You are offline — showing saved data. Booking and payment need a connection.
+      {t("net.banner")}
     </div>
   );
 }
 
 export function ConnectionPill() {
+  const { t } = useI18n();
   const online = useOnline();
   return (
     <span
@@ -76,13 +80,14 @@ export function ConnectionPill() {
       )}
     >
       {online ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-      {online ? "Online" : "Offline"}
+      {online ? t("net.online") : t("net.offline")}
     </span>
   );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { data: roles } = useQuery({ ...myRolesQuery, enabled: Boolean(user) });
   const isStaff = (roles ?? []).some(
@@ -114,7 +119,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                   )}
                 >
-                  {item.label}
+                  {t(item.label)}
                 </Link>
               );
             })}
@@ -127,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
               )}
             >
-              Agencies
+              {t("nav.agencies")}
             </Link>
             <Link
               to="/timetable"
@@ -139,7 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
               )}
             >
-              Timetable
+              {t("nav.timetable")}
             </Link>
             {isStaff ? (
               <>
@@ -152,7 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                   )}
                 >
-                  Stations
+                  {t("nav.stations")}
                 </Link>
                 <Link
                   to="/admin"
@@ -163,24 +168,25 @@ export function AppShell({ children }: { children: ReactNode }) {
                       : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                   )}
                 >
-                  Dashboard
+                  {t("nav.dashboard")}
                 </Link>
               </>
             ) : null}
           </nav>
 
           <div className="flex items-center gap-2">
-            <ConnectionPill />
+            <span className="hidden sm:inline-flex"><ConnectionPill /></span>
+            <LanguageSwitcher />
             <MobileMenu isStaff={isStaff} pathname={pathname} />
             {user ? (
               <Button variant="ghost" size="sm" onClick={() => void signOut()}>
                 <LogOut className="size-4" />
-                <span className="hidden sm:inline">Sign out</span>
+                <span className="hidden sm:inline">{t("nav.signOut")}</span>
               </Button>
             ) : (
               <Button asChild size="sm">
                 <Link to="/auth" search={{ redirect: pathname }}>
-                  Sign in
+                  {t("nav.signIn")}
                 </Link>
               </Button>
             )}
@@ -206,7 +212,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               >
                 <Icon className="size-5" strokeWidth={active ? 2.6 : 2} />
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
@@ -217,13 +223,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 const MOBILE_EXTRA = [
-  { to: "/timetable", label: "Timetable", icon: CalendarClock },
-  { to: "/agencies", label: "Agencies", icon: Building2 },
+  { to: "/timetable", label: "nav.timetable" as TKey, icon: CalendarClock },
+  { to: "/agencies", label: "nav.agencies" as TKey, icon: Building2 },
 ] as const;
 
 const MOBILE_STAFF = [
-  { to: "/stations", label: "Stations", icon: MapPin },
-  { to: "/admin", label: "Admin Dashboard", icon: ShieldCheck },
+  { to: "/stations", label: "nav.stations" as TKey, icon: MapPin },
+  { to: "/admin", label: "nav.adminDashboard" as TKey, icon: ShieldCheck },
 ] as const;
 
 function MobileMenu({
@@ -235,7 +241,8 @@ function MobileMenu({
 }) {
   const [open, setOpen] = useState(false);
 
-  const renderLink = (item: { to: string; label: string; icon: typeof Home }) => {
+  const { t } = useI18n();
+  const renderLink = (item: { to: string; label: TKey; icon: typeof Home }) => {
     const Icon = item.icon;
     const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
     const search =
@@ -257,7 +264,7 @@ function MobileMenu({
           )}
         >
           <Icon className="size-5" />
-          {item.label}
+          {t(item.label)}
         </Link>
       </SheetClose>
     );
@@ -266,13 +273,13 @@ function MobileMenu({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="md:hidden" aria-label="Open menu">
+        <Button variant="ghost" size="sm" className="md:hidden" aria-label={t("nav.openMenu")}>
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-72">
         <SheetHeader>
-          <SheetTitle>All pages</SheetTitle>
+          <SheetTitle>{t("nav.allPages")}</SheetTitle>
         </SheetHeader>
         <nav className="mt-4 grid gap-1">
           {NAV.map(renderLink)}
@@ -280,13 +287,13 @@ function MobileMenu({
           {isStaff ? (
             <>
               <p className="mt-3 px-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Staff
+                {t("nav.staff")}
               </p>
               {MOBILE_STAFF.map(renderLink)}
             </>
           ) : (
             <p className="mt-3 px-4 text-xs text-muted-foreground">
-              Sign in with a staff account to manage stations, buses and bookings.
+              {t("nav.staffHint")}
             </p>
           )}
         </nav>
