@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { formatDate, formatRwf, formatTime, todayISO } from "@/lib/format";
 import {
@@ -67,6 +68,7 @@ const POPULAR = [
 function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useI18n();
   const { data: stations } = useQuery(stationsQuery);
   const { data: agencies } = useQuery(agenciesQuery);
   const { data: bookings } = useQuery({ ...myBookingsQuery, enabled: Boolean(user) });
@@ -127,14 +129,13 @@ function HomePage() {
       <section className="bg-hero text-surface-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 pt-12 pb-28 sm:pt-16">
           <p className="text-xs font-bold tracking-[0.24em] text-accent uppercase">
-            Rwanda Bus Network
+            {t("home.kicker")}
           </p>
           <h1 className="mt-3 max-w-2xl text-3xl leading-tight font-extrabold sm:text-5xl">
-            Book your journey across Rwanda
+            {t("home.title")}
           </h1>
           <p className="mt-4 max-w-xl text-sm text-surface-foreground/80 sm:text-base">
-            Compare departures from Horizon Express, Volcano Express and Stella Express, choose
-            your exact seat and travel with an instant digital QR ticket.
+            {t("home.lead")}
           </p>
         </div>
       </section>
@@ -144,10 +145,10 @@ function HomePage() {
           <CardContent className="p-5 sm:p-6">
             <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
               <div className="space-y-1.5">
-                <Label className="text-[11px] tracking-widest uppercase">From</Label>
+                <Label className="text-[11px] tracking-widest uppercase">{t("home.from")}</Label>
                 <Select value={from} onValueChange={setFrom}>
                   <SelectTrigger className="h-12 w-full">
-                    <SelectValue placeholder="Departure station" />
+                    <SelectValue placeholder={t("home.departure")} />
                   </SelectTrigger>
                   <SelectContent>
                     {stationList.map((s) => (
@@ -160,10 +161,10 @@ function HomePage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] tracking-widest uppercase">To</Label>
+                <Label className="text-[11px] tracking-widest uppercase">{t("home.to")}</Label>
                 <Select value={to} onValueChange={setTo}>
                   <SelectTrigger className="h-12 w-full">
-                    <SelectValue placeholder="Destination station" />
+                    <SelectValue placeholder={t("home.destination")} />
                   </SelectTrigger>
                   <SelectContent>
                     {stationList.map((s) => (
@@ -176,7 +177,7 @@ function HomePage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] tracking-widest uppercase">Date</Label>
+                <Label className="text-[11px] tracking-widest uppercase">{t("home.date")}</Label>
                 <Input
                   type="date"
                   className="h-12"
@@ -187,7 +188,7 @@ function HomePage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] tracking-widest uppercase">Passengers</Label>
+                <Label className="text-[11px] tracking-widest uppercase">{t("home.passengers")}</Label>
                 <Select value={pax} onValueChange={setPax}>
                   <SelectTrigger className="h-12 w-full md:w-24">
                     <SelectValue />
@@ -208,13 +209,13 @@ function HomePage() {
                 disabled={!from || !to || sameStation}
                 onClick={() => runSearch()}
               >
-                Search buses
+                {t("home.searchBuses")}
                 <ArrowRight className="size-4" />
               </Button>
             </div>
             {sameStation ? (
               <p className="mt-3 text-xs font-medium text-destructive">
-                Departure and destination must be different stations.
+                {t("home.sameStation")}
               </p>
             ) : null}
           </CardContent>
@@ -225,7 +226,7 @@ function HomePage() {
         <TripRecommendations date={date} originId={from ? Number(from) : null} passengers={Number(pax)} />
         {upcoming ? (
           <section>
-            <h2 className="mb-3 text-lg font-bold">Upcoming trip</h2>
+            <h2 className="mb-3 text-lg font-bold">{t("home.upcoming")}</h2>
             <Card className="border-primary/25 bg-primary/5">
               <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
                 <div>
@@ -273,7 +274,7 @@ function HomePage() {
         ) : null}
 
         <section>
-          <h2 className="mb-3 text-lg font-bold">Popular destinations</h2>
+          <h2 className="mb-3 text-lg font-bold">{t("home.popular")}</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {POPULAR.map((p) => {
               const destination = stationList.find((s) => s.name === p.to);
@@ -288,7 +289,7 @@ function HomePage() {
                     <p className="mt-3 font-display text-lg font-bold">{p.label}</p>
                     <p className="text-sm text-muted-foreground">{p.note}</p>
                     <p className="mt-3 text-sm font-semibold text-primary">
-                      from {formatRwf(p.price)}
+                      {t("home.fromPrice")} {formatRwf(p.price)}
                     </p>
                   </CardContent>
                 </Card>
@@ -298,7 +299,7 @@ function HomePage() {
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-bold">Available agencies</h2>
+          <h2 className="mb-3 text-lg font-bold">{t("home.agencies")}</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {(agencies ?? []).map((a) => (
               <Card key={a.id}>
@@ -320,18 +321,18 @@ function HomePage() {
           {[
             {
               icon: CalendarDays,
-              title: "Book 14 days ahead",
-              body: "Daily departures at 06:30, 10:00 and 15:30 on every corridor.",
+              title: t("home.tip1t"),
+              body: t("home.tip1b"),
             },
             {
               icon: ShieldCheck,
-              title: "Guaranteed seat",
-              body: "Seats are locked the moment you reserve — no double bookings.",
+              title: t("home.tip2t"),
+              body: t("home.tip2b"),
             },
             {
               icon: Clock,
-              title: "Arrive 20 min early",
-              body: "Show your QR ticket at the gate for a quick scan and boarding.",
+              title: t("home.tip3t"),
+              body: t("home.tip3b"),
             },
           ].map((t) => (
             <div key={t.title} className="rounded-xl border border-border bg-card p-5">
