@@ -1,6 +1,15 @@
+import { useI18n } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Clock, Loader2, MapPin, ShieldCheck, Smartphone, Ticket } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock,
+  Loader2,
+  MapPin,
+  ShieldCheck,
+  Smartphone,
+  Ticket,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -48,6 +57,7 @@ function verifyUrl(code: string) {
 }
 
 function BookingPage() {
+  const { tr } = useI18n();
   const { bookingId } = Route.useParams();
   const queryClient = useQueryClient();
   const [method, setMethod] = useState<string>("MTN_MOMO");
@@ -67,10 +77,10 @@ function BookingPage() {
       await queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       void queryClient.invalidateQueries({ queryKey: ["bookings", "mine"] });
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      toast.success("Payment successful — your ticket is ready");
+      toast.success(tr("Payment successful — your ticket is ready"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Payment failed, please try again");
+      toast.error(error instanceof Error ? error.message : tr("Payment failed, please try again"));
     },
   });
 
@@ -82,10 +92,10 @@ function BookingPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["booking", bookingId] });
       void queryClient.invalidateQueries({ queryKey: ["bookings", "mine"] });
-      toast.success("Booking cancelled");
+      toast.success(tr("Booking cancelled"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Could not cancel this booking");
+      toast.error(error instanceof Error ? error.message : tr("Could not cancel this booking"));
     },
   });
 
@@ -93,7 +103,7 @@ function BookingPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-3xl space-y-4 px-4 py-8">
-          <PassengerLoading label="Loading your booking and tickets…" />
+          <PassengerLoading label={tr("Loading your booking and tickets…")} />
           <Skeleton className="h-28 w-full rounded-xl" />
           <Skeleton className="h-80 w-full rounded-xl" />
         </div>
@@ -105,13 +115,21 @@ function BookingPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-xl px-4 py-16 text-center">
-          <h1 className="text-xl font-bold">Booking unavailable</h1>
+          <h1 className="text-xl font-bold">{tr("Booking unavailable")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            We could not load this booking. It may have been removed or belongs to another account.
+            {tr(
+              "We could not load this booking. It may have been removed or belongs to another account.",
+            )}
           </p>
-          <PassengerError message="Check your connection and make sure you are signed in to the booking's account." retry={() => void bookingResult.refetch()} retrying={bookingResult.isFetching} />
+          <PassengerError
+            message={tr(
+              "Check your connection and make sure you are signed in to the booking's account.",
+            )}
+            retry={() => void bookingResult.refetch()}
+            retrying={bookingResult.isFetching}
+          />
           <Button asChild className="mt-6">
-            <Link to="/">Back to home</Link>
+            <Link to="/">{tr("Back to home")}</Link>
           </Button>
         </div>
       </AppShell>
@@ -132,7 +150,7 @@ function BookingPage() {
               <Badge className="bg-accent text-accent-foreground hover:bg-accent">
                 {booking.booking_ref}
               </Badge>
-              <Badge variant="secondary">{booking.status}</Badge>
+              <Badge variant="secondary">{tr(booking.status)}</Badge>
             </div>
             <h1 className="mt-3 font-display text-2xl font-extrabold sm:text-3xl">
               {trip.route.origin.city} → {trip.route.destination.city}
@@ -148,7 +166,7 @@ function BookingPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <Ticket className="size-4" />
-                Seats {booking.seats.map((s) => s.seat_label).join(", ") || "—"}
+                {tr("Seats")} {booking.seats.map((s) => s.seat_label).join(", ") || "—"}
               </span>
             </div>
           </CardContent>
@@ -157,7 +175,7 @@ function BookingPage() {
         <Card>
           <CardContent className="space-y-5 p-6">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-semibold">Amount due</span>
+              <span className="text-sm font-semibold">{tr("Amount due")}</span>
               <span className="font-display text-2xl font-extrabold text-primary">
                 {formatRwf(booking.total_amount)}
               </span>
@@ -168,17 +186,34 @@ function BookingPage() {
                 <div className="flex items-start gap-3 rounded-lg bg-secondary p-4">
                   <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
                   <div className="text-sm">
-                    <p className="font-semibold">Payment received</p>
+                    <p className="font-semibold">{tr("Payment received")}</p>
                     <p className="text-muted-foreground">
-                      Paid with {payment?.method.replace("_", " ") ?? "mobile money"} · reference{" "}
-                      {payment?.reference ?? "—"}
+                      {tr("paymentReceipt", {
+                        method: payment?.method.replaceAll("_", " ") ?? tr("mobile money"),
+                        ref: payment?.reference ?? "—",
+                      })}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h2 className="font-display text-base font-bold">Your tickets</h2>
-                  {booking.tickets.length === 0 ? <div className="space-y-3"><p role="status" className="text-sm text-muted-foreground">Payment is confirmed, but your digital tickets are not available yet.</p><Button variant="outline" disabled={bookingResult.isFetching} onClick={() => void bookingResult.refetch()}>{bookingResult.isFetching ? "Checking tickets…" : "Refresh tickets"}</Button></div> : null}
+                  <h2 className="font-display text-base font-bold">{tr("Your tickets")}</h2>
+                  {booking.tickets.length === 0 ? (
+                    <div className="space-y-3">
+                      <p role="status" className="text-sm text-muted-foreground">
+                        {tr(
+                          "Payment is confirmed, but your digital tickets are not available yet.",
+                        )}
+                      </p>
+                      <Button
+                        variant="outline"
+                        disabled={bookingResult.isFetching}
+                        onClick={() => void bookingResult.refetch()}
+                      >
+                        {bookingResult.isFetching ? tr("Checking tickets…") : tr("Refresh tickets")}
+                      </Button>
+                    </div>
+                  ) : null}
                   {booking.tickets.map((t) => (
                     <div
                       key={t.id}
@@ -188,14 +223,14 @@ function BookingPage() {
                       <div className="min-w-0">
                         <p className="break-all font-mono font-semibold">{t.ticket_code}</p>
                         <p className="text-muted-foreground">
-                          Seat {t.seat_label} · {t.status}
+                          {tr("Seat")} {t.seat_label} · {tr(t.status)}
                         </p>
                         <Link
                           to="/verify/$ticketCode"
                           params={{ ticketCode: t.ticket_code }}
                           className="mt-1 inline-block text-xs font-semibold text-primary underline"
                         >
-                          Open boarding check
+                          {tr("Open boarding check")}
                         </Link>
                       </div>
                     </div>
@@ -203,19 +238,21 @@ function BookingPage() {
                 </div>
 
                 <Button asChild className="w-full" size="lg">
-                  <Link to="/">Back to home</Link>
+                  <Link to="/">{tr("Back to home")}</Link>
                 </Button>
               </div>
             ) : isCancelled ? (
               <div className="rounded-lg bg-secondary p-4 text-sm">
-                This booking was cancelled. The seats have been released.
+                {tr("This booking was cancelled. The seats have been released.")}
               </div>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <h2 className="font-display text-base font-bold">Choose payment method</h2>
+                  <h2 className="font-display text-base font-bold">
+                    {tr("Choose payment method")}
+                  </h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Mobile money is simulated in this demo — no real charge is made.
+                    {tr("Mobile money is simulated in this demo — no real charge is made.")}
                   </p>
                 </div>
 
@@ -235,7 +272,7 @@ function BookingPage() {
                       <Smartphone className="mt-0.5 size-5 shrink-0 text-primary" />
                       <span>
                         <span className="block text-sm font-semibold">{m.label}</span>
-                        <span className="block text-xs text-muted-foreground">{m.hint}</span>
+                        <span className="block text-xs text-muted-foreground">{tr(m.hint)}</span>
                       </span>
                     </button>
                   ))}
@@ -249,17 +286,40 @@ function BookingPage() {
                 >
                   {pay.isPending ? (
                     <>
-                      <Loader2 className="size-4 animate-spin" /> Confirming payment…
+                      <Loader2 className="size-4 animate-spin" /> {tr("Confirming payment…")}
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="size-4" /> Pay {formatRwf(booking.total_amount)}
+                      <ShieldCheck className="size-4" /> {tr("Pay")}
+                      {formatRwf(booking.total_amount)}
                     </>
                   )}
                 </Button>
 
-                {pay.isError ? <PassengerError message="Payment could not be confirmed. Check the booking status before trying another payment." retry={() => { pay.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
-                {cancel.isError ? <PassengerError message="Cancellation could not be confirmed. Refresh your booking to check its current status." retry={() => { cancel.reset(); void bookingResult.refetch(); }} retrying={bookingResult.isFetching} /> : null}
+                {pay.isError ? (
+                  <PassengerError
+                    message={tr(
+                      "Payment could not be confirmed. Check the booking status before trying another payment.",
+                    )}
+                    retry={() => {
+                      pay.reset();
+                      void bookingResult.refetch();
+                    }}
+                    retrying={bookingResult.isFetching}
+                  />
+                ) : null}
+                {cancel.isError ? (
+                  <PassengerError
+                    message={tr(
+                      "Cancellation could not be confirmed. Refresh your booking to check its current status.",
+                    )}
+                    retry={() => {
+                      cancel.reset();
+                      void bookingResult.refetch();
+                    }}
+                    retrying={bookingResult.isFetching}
+                  />
+                ) : null}
 
                 <Button
                   variant="ghost"
@@ -267,7 +327,7 @@ function BookingPage() {
                   disabled={pay.isPending || cancel.isPending}
                   onClick={() => cancel.mutate()}
                 >
-                  {cancel.isPending ? "Cancelling…" : "Cancel booking"}
+                  {cancel.isPending ? tr("Cancelling…") : tr("Cancel booking")}
                 </Button>
               </div>
             )}

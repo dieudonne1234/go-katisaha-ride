@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Bus, Clock, Info, MapPin, Users } from "lucide-react";
@@ -54,18 +55,20 @@ function SeatBox({
   state: "available" | "selected" | "booked";
   onClick: () => void;
 }) {
+  const { tr } = useI18n();
   return (
     <button
       type="button"
       disabled={state === "booked"}
       onClick={onClick}
-      aria-label={`Seat ${label} ${state}`}
+      aria-label={`${tr("Seat")} ${label} ${tr(state)}`}
       className={cn(
         "flex h-11 w-11 items-center justify-center rounded-lg border-2 text-xs font-bold transition-all",
         state === "available" &&
           "border-border bg-card text-foreground hover:border-primary hover:bg-primary/5",
         state === "selected" && "border-primary bg-primary text-primary-foreground shadow-card",
-        state === "booked" && "cursor-not-allowed border-transparent bg-muted text-muted-foreground/60",
+        state === "booked" &&
+          "cursor-not-allowed border-transparent bg-muted text-muted-foreground/60",
       )}
     >
       {label}
@@ -74,6 +77,7 @@ function SeatBox({
 }
 
 function TripPage() {
+  const { tr, lang } = useI18n();
   const { tripId } = Route.useParams();
   const { pax } = Route.useSearch();
   const navigate = useNavigate();
@@ -125,7 +129,7 @@ function TripPage() {
     setSelected((prev) => {
       if (prev.includes(seatId)) return prev.filter((s) => s !== seatId);
       if (prev.length >= 5) {
-        toast.error("You can book up to 5 seats at once");
+        toast.error(tr("You can book up to 5 seats at once"));
         return prev;
       }
       return [...prev, seatId];
@@ -147,11 +151,11 @@ function TripPage() {
     onSuccess: (data) => {
       savePassengerDetails({ name: name.trim(), phone: phone.trim(), email: email.trim() });
       void queryClient.invalidateQueries({ queryKey: ["trip", id] });
-      toast.success(`Seats reserved — ${data.booking_ref}`);
+      toast.success(tr("seatsReserved", { ref: data.booking_ref }));
       void navigate({ to: "/booking/$bookingId", params: { bookingId: data.id } });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Could not reserve those seats");
+      toast.error(error instanceof Error ? error.message : tr("Could not reserve those seats"));
       void queryClient.invalidateQueries({ queryKey: ["trip", id] });
       setSelected([]);
     },
@@ -161,7 +165,7 @@ function TripPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-          <PassengerLoading label="Loading your trip…" />
+          <PassengerLoading label={tr("Loading your trip…")} />
           <Skeleton className="h-32 w-full rounded-xl" />
           <Skeleton className="h-96 w-full rounded-xl" />
         </div>
@@ -173,13 +177,17 @@ function TripPage() {
     return (
       <AppShell>
         <div className="mx-auto max-w-xl px-4 py-16 text-center">
-          <h1 className="text-xl font-bold">Trip unavailable</h1>
+          <h1 className="text-xl font-bold">{tr("Trip unavailable")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            This trip no longer exists or could not be loaded.
+            {tr("This trip no longer exists or could not be loaded.")}
           </p>
-          <PassengerError message="Check your connection or select a different departure." retry={() => void tripResult.refetch()} retrying={tripResult.isFetching} />
+          <PassengerError
+            message={tr("Check your connection or select a different departure.")}
+            retry={() => void tripResult.refetch()}
+            retrying={tripResult.isFetching}
+          />
           <Button asChild className="mt-6">
-            <Link to="/">Back to home</Link>
+            <Link to="/">{tr("Back to home")}</Link>
           </Button>
         </div>
       </AppShell>
@@ -187,7 +195,12 @@ function TripPage() {
   }
 
   const canSubmit =
-    selected.length > 0 && name.trim().length > 1 && phone.trim().length >= 8 && Boolean(user) && !seatsResult.isError && !seatsResult.isFetching;
+    selected.length > 0 &&
+    name.trim().length > 1 &&
+    phone.trim().length >= 8 &&
+    Boolean(user) &&
+    !seatsResult.isError &&
+    !seatsResult.isFetching;
 
   return (
     <AppShell>
@@ -213,17 +226,17 @@ function TripPage() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Bus className="size-4" />
-                  {trip.bus.bus_type} · {trip.bus.bus_number}
+                  {tr(trip.bus.bus_type)} · {trip.bus.bus_number}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Users className="size-4" />
-                  {trip.available_seats} seats free
+                  {tr("seatsAvailable", { count: trip.available_seats })}
                 </span>
               </div>
             </div>
             <div className="text-left md:text-right">
               <p className="text-xs tracking-widest text-surface-foreground/70 uppercase">
-                Fare per seat
+                {tr("Fare per seat")}
               </p>
               <p className="font-display text-3xl font-extrabold text-accent">
                 {formatRwf(trip.price_rwf)}
@@ -232,47 +245,63 @@ function TripPage() {
           </CardContent>
         </Card>
 
-        <RouteTimetable
-          routeId={trip.route.id}
-          date={trip.travel_date}
-          currentTripId={trip.id}
-        />
-
-
+        <RouteTimetable routeId={trip.route.id} date={trip.travel_date} currentTripId={trip.id} />
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
           <Card>
             <CardContent className="p-6">
-              <h2 className="font-display text-lg font-bold">Select your seat</h2>
+              <h2 className="font-display text-lg font-bold">{tr("Select your seat")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Booking for {pax} passenger{pax === 1 ? "" : "s"}. Tap a seat to select it.
+                {tr("bookingFor", { count: pax })}
               </p>
 
               <div className="mt-5 flex flex-wrap gap-4 text-xs font-medium">
                 <span className="flex items-center gap-2">
-                  <span className="size-4 rounded border-2 border-border bg-card" /> Available
+                  <span className="size-4 rounded border-2 border-border bg-card" />{" "}
+                  {tr("Available")}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="size-4 rounded border-2 border-primary bg-primary" /> Selected
+                  <span className="size-4 rounded border-2 border-primary bg-primary" />{" "}
+                  {tr("Selected")}
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="size-4 rounded bg-muted" /> Booked
+                  <span className="size-4 rounded bg-muted" /> {tr("Booked")}
                 </span>
               </div>
 
               <div className="mt-6 rounded-2xl border border-border bg-secondary/40 p-5">
                 <div className="mb-5 flex justify-end">
                   <span className="rounded-lg bg-surface px-3 py-1.5 text-[11px] font-bold tracking-widest text-surface-foreground uppercase">
-                    Driver
+                    {tr("Driver")}
                   </span>
                 </div>
 
                 {seatsResult.isLoading ? (
-                  <><PassengerLoading label="Checking available seats…" /><Skeleton className="h-56 w-full" /></>
+                  <>
+                    <PassengerLoading label={tr("Checking available seats…")} />
+                    <Skeleton className="h-56 w-full" />
+                  </>
                 ) : seatsResult.isError ? (
-                  <PassengerError message="The seat map could not be loaded. Your passenger details have been kept." retry={() => void seatsResult.refetch()} retrying={seatsResult.isFetching} />
+                  <PassengerError
+                    message={tr(
+                      "The seat map could not be loaded. Your passenger details have been kept.",
+                    )}
+                    retry={() => void seatsResult.refetch()}
+                    retrying={seatsResult.isFetching}
+                  />
                 ) : rows.length === 0 ? (
-                  <div className="space-y-3"><p role="status" className="text-sm text-muted-foreground">No seat layout is available for this bus.</p><Button variant="outline" disabled={seatsResult.isFetching} onClick={() => void seatsResult.refetch()}>Check seats again</Button></div>
+                  <div className="space-y-3">
+                    <p role="status" className="text-sm text-muted-foreground">
+                      {tr("No seat layout is available for this bus.")}
+                    </p>
+                    <Button
+                      variant="outline"
+                      disabled={seatsResult.isFetching}
+                      onClick={() => void seatsResult.refetch()}
+                    >
+                      {tr("Check seats again")}
+                    </Button>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
                     {rows.map(([rowIndex, seats]) => (
@@ -312,13 +341,17 @@ function TripPage() {
                 )}
               </div>
 
-              {seatsResult.data?.length && seatsResult.data.every((seat) => seat.taken) ? <p role="status" className="mt-4 text-sm text-muted-foreground">This departure is fully booked. Choose another trip.</p> : null}
+              {seatsResult.data?.length && seatsResult.data.every((seat) => seat.taken) ? (
+                <p role="status" className="mt-4 text-sm text-muted-foreground">
+                  {tr("This departure is fully booked. Choose another trip.")}
+                </p>
+              ) : null}
 
               <div className="mt-6 space-y-4">
-                <h3 className="font-display text-base font-bold">Passenger information</h3>
+                <h3 className="font-display text-base font-bold">{tr("Passenger information")}</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="pname">Full name</Label>
+                    <Label htmlFor="pname">{tr("Full name")}</Label>
                     <Input
                       id="pname"
                       value={name}
@@ -327,7 +360,7 @@ function TripPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="pphone">Phone number</Label>
+                    <Label htmlFor="pphone">{tr("Phone number")}</Label>
                     <Input
                       id="pphone"
                       value={phone}
@@ -336,7 +369,7 @@ function TripPage() {
                     />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="pemail">Email (optional)</Label>
+                    <Label htmlFor="pemail">{tr("Email (optional)")}</Label>
                     <Input
                       id="pemail"
                       type="email"
@@ -352,39 +385,37 @@ function TripPage() {
 
           <Card className="lg:sticky lg:top-24">
             <CardContent className="space-y-4 p-6">
-              <h2 className="font-display text-lg font-bold">Booking summary</h2>
+              <h2 className="font-display text-lg font-bold">{tr("Booking summary")}</h2>
 
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Agency</dt>
+                  <dt className="text-muted-foreground">{tr("Agency")}</dt>
                   <dd className="font-semibold">{trip.agency.name}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Route</dt>
+                  <dt className="text-muted-foreground">{tr("Route")}</dt>
                   <dd className="font-semibold">
                     {trip.route.origin.city} → {trip.route.destination.city}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Date</dt>
+                  <dt className="text-muted-foreground">{tr("Date")}</dt>
                   <dd className="font-semibold">{formatDate(trip.travel_date)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Departure</dt>
+                  <dt className="text-muted-foreground">{tr("Departure")}</dt>
                   <dd className="font-semibold">{formatTime(trip.departure_time)}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Seats</dt>
+                  <dt className="text-muted-foreground">{tr("Seats")}</dt>
                   <dd className="font-semibold">
-                    {selectedSeats.length
-                      ? selectedSeats.map((s) => s.seat_label).join(", ")
-                      : "—"}
+                    {selectedSeats.length ? selectedSeats.map((s) => s.seat_label).join(", ") : "—"}
                   </dd>
                 </div>
               </dl>
 
               <div className="flex items-baseline justify-between border-t border-border pt-4">
-                <span className="text-sm font-semibold">Total</span>
+                <span className="text-sm font-semibold">{tr("Total")}</span>
                 <span className="font-display text-2xl font-extrabold text-primary">
                   {formatRwf(total)}
                 </span>
@@ -394,13 +425,13 @@ function TripPage() {
                 <div className="flex gap-2 rounded-lg bg-secondary p-3 text-xs">
                   <Info className="mt-0.5 size-4 shrink-0 text-primary" />
                   <span>
-                    Sign in to reserve your seats.{" "}
+                    {tr("Sign in to reserve your seats.")}{" "}
                     <Link
                       to="/auth"
                       search={{ redirect: `/trips/${tripId}` }}
                       className="font-semibold text-primary underline"
                     >
-                      Sign in or register
+                      {tr("Sign in or register")}
                     </Link>
                   </span>
                 </div>
@@ -412,15 +443,28 @@ function TripPage() {
                 disabled={!canSubmit || booking.isPending}
                 onClick={() => booking.mutate()}
               >
-                {booking.isPending ? "Reserving…" : "Continue to payment"}
+                {booking.isPending ? tr("Reserving…") : tr("Continue to payment")}
                 <ArrowRight className="size-4" />
               </Button>
 
-              {booking.isError ? <PassengerError message="We could not reserve your seats. Your passenger details have been kept; check availability and select your seats again." retry={() => { booking.reset(); void seatsResult.refetch(); }} retrying={seatsResult.isFetching} /> : null}
+              {booking.isError ? (
+                <PassengerError
+                  message={tr(
+                    "We could not reserve your seats. Your passenger details have been kept; check availability and select your seats again.",
+                  )}
+                  retry={() => {
+                    booking.reset();
+                    void seatsResult.refetch();
+                  }}
+                  retrying={seatsResult.isFetching}
+                />
+              ) : null}
 
-              {user && selected.length > 0 && (name.trim().length < 2 || phone.trim().length < 8) ? (
+              {user &&
+              selected.length > 0 &&
+              (name.trim().length < 2 || phone.trim().length < 8) ? (
                 <p className="text-xs text-muted-foreground">
-                  Enter the passenger name and phone number to continue.
+                  {tr("Enter the passenger name and phone number to continue.")}
                 </p>
               ) : null}
             </CardContent>
@@ -440,28 +484,48 @@ function RouteTimetable({
   date: string;
   currentTripId: number;
 }) {
-  const { data, isLoading, isError, isFetching, refetch } = useQuery(routeTimetableQuery(routeId, date));
-  if (isLoading) return <div className="mb-6"><PassengerLoading label="Loading other departures…" /><Skeleton className="h-24 w-full rounded-xl" /></div>;
-  if (isError) return <div className="mb-6"><PassengerError message="Other departures could not be loaded." retry={() => void refetch()} retrying={isFetching} /></div>;
+  const { tr, lang } = useI18n();
+  const { data, isLoading, isError, isFetching, refetch } = useQuery(
+    routeTimetableQuery(routeId, date),
+  );
+  if (isLoading)
+    return (
+      <div className="mb-6">
+        <PassengerLoading label={tr("Loading other departures…")} />
+        <Skeleton className="h-24 w-full rounded-xl" />
+      </div>
+    );
+  if (isError)
+    return (
+      <div className="mb-6">
+        <PassengerError
+          message={tr("Other departures could not be loaded.")}
+          retry={() => void refetch()}
+          retrying={isFetching}
+        />
+      </div>
+    );
   const trips = data ?? [];
   if (trips.length < 2) return null;
 
   return (
     <Card className="mb-6">
       <CardContent className="p-5">
-        <h2 className="font-display text-lg font-bold">Today&rsquo;s departures on this route</h2>
+        <h2 className="font-display text-lg font-bold">
+          {tr("Today&rsquo;s departures on this route")}
+        </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {formatDate(date)} — compare times and fares before you book.
+          {formatDate(date)} — {tr("compareFares")}
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 pr-3 font-semibold">Departs</th>
-                <th className="py-2 pr-3 font-semibold">Arrives</th>
-                <th className="py-2 pr-3 font-semibold">Agency</th>
-                <th className="py-2 pr-3 font-semibold">Seats left</th>
-                <th className="py-2 pr-3 font-semibold">Fare</th>
+                <th className="py-2 pr-3 font-semibold">{tr("Departs")}</th>
+                <th className="py-2 pr-3 font-semibold">{tr("Arrives")}</th>
+                <th className="py-2 pr-3 font-semibold">{tr("Agency")}</th>
+                <th className="py-2 pr-3 font-semibold">{tr("Seats left")}</th>
+                <th className="py-2 pr-3 font-semibold">{tr("Fare")}</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -481,7 +545,7 @@ function RouteTimetable({
                   <td className="py-2.5 pr-3 font-semibold">{formatRwf(t.price_rwf)}</td>
                   <td className="py-2.5 text-right">
                     {t.id === currentTripId ? (
-                      <Badge variant="secondary">Selected</Badge>
+                      <Badge variant="secondary">{tr("Selected")}</Badge>
                     ) : (
                       <Button asChild size="sm" variant="outline">
                         <Link
@@ -489,7 +553,7 @@ function RouteTimetable({
                           params={{ tripId: String(t.id) }}
                           search={{ pax: 1 }}
                         >
-                          View
+                          {tr("View")}
                         </Link>
                       </Button>
                     )}

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Bus, Clock, Filter, MapPin, SearchX, Users } from "lucide-react";
@@ -56,6 +57,7 @@ export const Route = createFileRoute("/search")({
 });
 
 function SearchPage() {
+  const { tr } = useI18n();
   const params = Route.useSearch();
   const navigate = useNavigate();
   const stationsResult = useQuery(stationsQuery);
@@ -135,17 +137,17 @@ function SearchPage() {
     <AppShell>
       <div className="mx-auto w-full max-w-6xl px-4 py-8">
         <PageHeader
-          title="Search buses"
-          subtitle="Choose your stations and travel date to see live departures."
+          title={tr("Search buses")}
+          subtitle={tr("Choose your stations and travel date to see live departures.")}
         />
 
         <Card className="mb-6 shadow-card">
           <CardContent className="grid gap-4 p-5 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
             <div className="space-y-1.5">
-              <Label className="text-[11px] tracking-widest uppercase">From</Label>
+              <Label className="text-[11px] tracking-widest uppercase">{tr("From")}</Label>
               <Select value={from} onValueChange={setFrom}>
                 <SelectTrigger className="h-11 w-full">
-                  <SelectValue placeholder="Departure" />
+                  <SelectValue placeholder={tr("Departure")} />
                 </SelectTrigger>
                 <SelectContent>
                   {stationList.map((s) => (
@@ -157,10 +159,10 @@ function SearchPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] tracking-widest uppercase">To</Label>
+              <Label className="text-[11px] tracking-widest uppercase">{tr("To")}</Label>
               <Select value={to} onValueChange={setTo}>
                 <SelectTrigger className="h-11 w-full">
-                  <SelectValue placeholder="Destination" />
+                  <SelectValue placeholder={tr("Destination")} />
                 </SelectTrigger>
                 <SelectContent>
                   {stationList.map((s) => (
@@ -172,7 +174,7 @@ function SearchPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] tracking-widest uppercase">Date</Label>
+              <Label className="text-[11px] tracking-widest uppercase">{tr("Date")}</Label>
               <Input
                 type="date"
                 className="h-11"
@@ -182,9 +184,9 @@ function SearchPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[11px] tracking-widest uppercase">Pax</Label>
+              <Label className="text-[11px] tracking-widest uppercase">{tr("Pax")}</Label>
               <Select value={pax} onValueChange={setPax}>
-                <SelectTrigger className="h-11 w-full md:w-20">
+                <SelectTrigger className="h-11 w-full md:w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -197,25 +199,37 @@ function SearchPage() {
               </Select>
             </div>
             <Button className="h-11" onClick={submit} disabled={!from || !to || from === to}>
-              Search
+              {tr("Search")}
             </Button>
           </CardContent>
         </Card>
 
-        {stationsResult.isLoading ? <PassengerLoading label="Loading stations…" /> : stationsResult.isError ? <PassengerError message="Stations could not be loaded. Check your connection and try again." retry={() => void stationsResult.refetch()} retrying={stationsResult.isFetching} /> : stationList.length === 0 ? <p role="status" className="mb-5 text-sm text-muted-foreground">No stations are available yet.</p> : null}
+        {stationsResult.isLoading ? (
+          <PassengerLoading label={tr("Loading stations…")} />
+        ) : stationsResult.isError ? (
+          <PassengerError
+            message={tr("Stations could not be loaded. Check your connection and try again.")}
+            retry={() => void stationsResult.refetch()}
+            retrying={stationsResult.isFetching}
+          />
+        ) : stationList.length === 0 ? (
+          <p role="status" className="mb-5 text-sm text-muted-foreground">
+            {tr("No stations are available yet.")}
+          </p>
+        ) : null}
 
         {ready ? (
           <>
             <div className="mb-5 flex flex-wrap items-center gap-3">
               <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                <Filter className="size-4" /> Filters
+                <Filter className="size-4" /> {tr("Filters")}
               </span>
               <Select value={agencyFilter} onValueChange={setAgencyFilter}>
                 <SelectTrigger className="h-9 w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All agencies</SelectItem>
+                  <SelectItem value="all">{tr("All agencies")}</SelectItem>
                   {(agencies ?? []).map((a) => (
                     <SelectItem key={a.id} value={String(a.id)}>
                       {a.name}
@@ -228,10 +242,10 @@ function SearchPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Any time</SelectItem>
-                  <SelectItem value="morning">Morning</SelectItem>
-                  <SelectItem value="afternoon">Afternoon</SelectItem>
-                  <SelectItem value="evening">Evening</SelectItem>
+                  <SelectItem value="all">{tr("Any time")}</SelectItem>
+                  <SelectItem value="morning">{tr("Morning")}</SelectItem>
+                  <SelectItem value="afternoon">{tr("Afternoon")}</SelectItem>
+                  <SelectItem value="evening">{tr("Evening")}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -239,52 +253,76 @@ function SearchPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="departure">Sort: departure time</SelectItem>
-                  <SelectItem value="arrival">Sort: arrival time</SelectItem>
-                  <SelectItem value="price">Sort: lowest price</SelectItem>
-                  <SelectItem value="seats">Sort: most seats free</SelectItem>
+                  <SelectItem value="departure">{tr("Sort: departure time")}</SelectItem>
+                  <SelectItem value="arrival">{tr("Sort: arrival time")}</SelectItem>
+                  <SelectItem value="price">{tr("Sort: lowest price")}</SelectItem>
+                  <SelectItem value="seats">{tr("Sort: most seats free")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {query.isLoading ? (
               <div className="space-y-4">
-                <PassengerLoading label="Searching available departures…" />
+                <PassengerLoading label={tr("Searching available departures…")} />
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="h-36 w-full rounded-xl" />
                 ))}
               </div>
             ) : query.isError ? (
-              <PassengerError message="We couldn't load departures. Check your connection and try again." retry={() => void query.refetch()} retrying={query.isFetching} />
+              <PassengerError
+                message={tr("We couldn't load departures. Check your connection and try again.")}
+                retry={() => void query.refetch()}
+                retrying={query.isFetching}
+              />
             ) : results.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
                   <SearchX className="size-10 text-muted-foreground" />
-                  <p className="font-display text-lg font-bold">No buses found</p>
+                  <p className="font-display text-lg font-bold">{tr("No buses found")}</p>
                   <p className="max-w-sm text-sm text-muted-foreground">
-                    There are no departures matching these filters. Try another date, another
-                    corridor, or clear the filters.
+                    {tr(
+                      "There are no departures matching these filters. Try another date, another corridor, or clear the filters.",
+                    )}
                   </p>
-                  <Button variant="outline" onClick={() => { setAgencyFilter("all"); setTimeFilter("all"); }} disabled={agencyFilter === "all" && timeFilter === "all"}>Clear filters</Button>
-                  <Button variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()}>{query.isFetching ? "Checking…" : "Check departures again"}</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setAgencyFilter("all");
+                      setTimeFilter("all");
+                    }}
+                    disabled={agencyFilter === "all" && timeFilter === "all"}
+                  >
+                    {tr("Clear filters")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    disabled={query.isFetching}
+                    onClick={() => void query.refetch()}
+                  >
+                    {query.isFetching ? tr("Checking…") : tr("Check departures again")}
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  {results.length} bus{results.length === 1 ? "" : "es"} available
+                  {results.length} bus{results.length === 1 ? "" : "es"} {"available"}
                 </p>
                 {results.map((trip) => (
-                  <Card key={trip.id} className="overflow-hidden transition-shadow hover:shadow-lift">
+                  <Card
+                    key={trip.id}
+                    className="overflow-hidden transition-shadow hover:shadow-lift"
+                  >
                     <CardContent className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
                             {trip.agency.name}
                           </Badge>
-                          <Badge variant="secondary">{trip.bus.bus_type}</Badge>
+                          <Badge variant="secondary">{tr(trip.bus.bus_type)}</Badge>
                           <span className="text-xs font-medium text-muted-foreground">
-                            Bus {trip.bus.bus_number} · {trip.bus.plate_number}
+                            {tr("Bus")}
+                            {trip.bus.bus_number} · {trip.bus.plate_number}
                           </span>
                         </div>
 
@@ -323,11 +361,14 @@ function SearchPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <Users className="size-3.5" />
-                            {trip.available_seats} of {trip.bus.seat_capacity} seats free
+                            {tr("seatAvailability", {
+                              count: trip.available_seats,
+                              capacity: trip.bus.seat_capacity,
+                            })}
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="size-3.5" />
-                            Boarding 20 min before departure
+                            {tr("Boarding 20 min before departure")}
                           </span>
                         </div>
                       </div>
@@ -337,7 +378,7 @@ function SearchPage() {
                           <p className="font-display text-2xl font-extrabold text-primary">
                             {formatRwf(trip.price_rwf)}
                           </p>
-                          <p className="text-xs text-muted-foreground">per passenger</p>
+                          <p className="text-xs text-muted-foreground">{tr("per passenger")}</p>
                         </div>
                         <Button asChild size="lg">
                           <Link
@@ -345,7 +386,8 @@ function SearchPage() {
                             params={{ tripId: String(trip.id) }}
                             search={{ pax: params.pax }}
                           >
-                            Select seats <ArrowRight className="size-4" />
+                            {tr("Select seats")}
+                            <ArrowRight className="size-4" />
                           </Link>
                         </Button>
                       </div>
@@ -359,9 +401,9 @@ function SearchPage() {
           <Card>
             <CardContent className="flex flex-col items-center gap-3 p-12 text-center">
               <Bus className="size-10 text-muted-foreground" />
-              <p className="font-display text-lg font-bold">Where are you travelling?</p>
+              <p className="font-display text-lg font-bold">{tr("Where are you travelling?")}</p>
               <p className="max-w-sm text-sm text-muted-foreground">
-                Pick a departure and destination station above to see all available buses.
+                {tr("Pick a departure and destination station above to see all available buses.")}
               </p>
             </CardContent>
           </Card>

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -84,6 +85,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  const { tr } = useI18n();
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-5">
@@ -102,6 +104,7 @@ function Stat({ label, value, icon }: { label: string; value: string; icon: Reac
 }
 
 function AdminPage() {
+  const { tr, lang } = useI18n();
   const { user, loading } = useAuth();
   const { data: roles, isLoading: rolesLoading } = useQuery({
     ...myRolesQuery,
@@ -130,16 +133,18 @@ function AdminPage() {
           <Card>
             <CardContent className="p-8 text-center">
               <ShieldCheck className="mx-auto size-8 text-muted-foreground" />
-              <h1 className="mt-3 font-display text-xl font-bold">Staff area</h1>
+              <h1 className="mt-3 font-display text-xl font-bold">{tr("Staff area")}</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {user
-                  ? "Your account is not linked to a bus agency. Ask your agency administrator for access."
-                  : "Sign in with your agency staff account to open the dashboard."}
+                  ? tr(
+                      "Your account is not linked to a bus agency. Ask your agency administrator for access.",
+                    )
+                  : tr("Sign in with your agency staff account to open the dashboard.")}
               </p>
               {!user ? (
                 <Button asChild className="mt-4">
                   <Link to="/auth" search={{ redirect: "/admin" }}>
-                    Sign in
+                    {tr("Sign in")}
                   </Link>
                 </Button>
               ) : null}
@@ -154,6 +159,7 @@ function AdminPage() {
 }
 
 function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number | null }) {
+  const { tr, lang } = useI18n();
   const queryClient = useQueryClient();
   const { data: agencies } = useQuery(agenciesQuery);
   const [scope, setScope] = useState<number | "ALL">(isSuper ? "ALL" : (agencyId as number));
@@ -164,10 +170,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
 
-  const scopedBookingIds = useMemo(
-    () => new Set((bookings ?? []).map((b) => b.id)),
-    [bookings],
-  );
+  const scopedBookingIds = useMemo(() => new Set((bookings ?? []).map((b) => b.id)), [bookings]);
 
   const revenue = useMemo(() => {
     const rows = (payments ?? []).filter((p) => scopedBookingIds.has(p.booking_id));
@@ -211,19 +214,21 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
 
   const agencyLabel =
     scope === "ALL"
-      ? "All agencies"
+      ? tr("All agencies")
       : ((agencies ?? []).find((a) => a.id === scope)?.name ??
         (bookings ?? [])[0]?.trip.agency.name ??
-        "Your agency");
+        tr("Your agency"));
 
   return (
     <AppShell>
       <div className="mx-auto w-full max-w-6xl px-4 py-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="font-display text-2xl font-extrabold">{agencyLabel} dashboard</h1>
+            <h1 className="font-display text-2xl font-extrabold">
+              {agencyLabel} {tr("dashboard")}
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Manage bookings, verify boarding tickets and track revenue.
+              {tr("Manage bookings, verify boarding tickets and track revenue.")}
             </p>
           </div>
           {isSuper ? (
@@ -233,7 +238,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
                 size="sm"
                 onClick={() => setScope("ALL")}
               >
-                All
+                {tr("All")}
               </Button>
               {(agencies ?? []).map((a) => (
                 <Button
@@ -251,33 +256,37 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Stat
-            label="Revenue"
+            label={tr("Revenue")}
             value={formatRwf(revenue.gross)}
             icon={<Banknote className="size-5" />}
           />
           <Stat
-            label="Paid bookings"
+            label={tr("Paid bookings")}
             value={String(revenue.count)}
             icon={<BadgeCheck className="size-5" />}
           />
           <Stat
-            label="Seats sold"
+            label={tr("Seats sold")}
             value={String(seatsSold)}
             icon={<TicketIcon className="size-5" />}
           />
-          <Stat label="Pending" value={String(pending)} icon={<QrCode className="size-5" />} />
+          <Stat
+            label={tr("Pending")}
+            value={String(pending)}
+            icon={<QrCode className="size-5" />}
+          />
         </div>
 
         <Tabs defaultValue="bookings" className="mt-8">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="verify">Verify ticket</TabsTrigger>
-            <TabsTrigger value="buses">Buses</TabsTrigger>
-            <TabsTrigger value="routes">Routes</TabsTrigger>
-            <TabsTrigger value="trips">Trips</TabsTrigger>
-            <TabsTrigger value="revenue">Reports</TabsTrigger>
-            {isSuper ? <TabsTrigger value="network">Agencies</TabsTrigger> : null}
-            {isSuper ? <TabsTrigger value="access">Permissions</TabsTrigger> : null}
+          <TabsList className="h-auto flex-wrap gap-1">
+            <TabsTrigger value="bookings">{tr("Bookings")}</TabsTrigger>
+            <TabsTrigger value="verify">{tr("Verify ticket")}</TabsTrigger>
+            <TabsTrigger value="buses">{tr("Buses")}</TabsTrigger>
+            <TabsTrigger value="routes">{tr("Routes")}</TabsTrigger>
+            <TabsTrigger value="trips">{tr("Trips")}</TabsTrigger>
+            <TabsTrigger value="revenue">{tr("Reports")}</TabsTrigger>
+            {isSuper ? <TabsTrigger value="network">{tr("Agencies")}</TabsTrigger> : null}
+            {isSuper ? <TabsTrigger value="access">{tr("Permissions")}</TabsTrigger> : null}
           </TabsList>
 
           {isSuper ? (
@@ -292,14 +301,12 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
             </TabsContent>
           ) : null}
 
-
-
           <TabsContent value="bookings" className="mt-4 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search ref, passenger or phone"
+                placeholder={tr("Search ref, passenger or phone")}
                 className="max-w-xs"
               />
               {["ALL", "PENDING", "CONFIRMED", "CANCELLED"].map((s) => (
@@ -309,7 +316,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
                   variant={statusFilter === s ? "default" : "outline"}
                   onClick={() => setStatusFilter(s)}
                 >
-                  {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                  {s === "ALL" ? tr("All") : tr(s)}
                 </Button>
               ))}
             </div>
@@ -322,7 +329,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
             ) : filtered.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center text-sm text-muted-foreground">
-                  No bookings match this filter.
+                  {tr("No bookings match this filter.")}
                 </CardContent>
               </Card>
             ) : (
@@ -359,25 +366,29 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => exportBookingsCsv(filtered, agencyLabel)}
+                onClick={() => exportBookingsCsv(filtered, agencyLabel, tr)}
               >
-                Export CSV
+                {tr("Export CSV")}
               </Button>
             </div>
             <Card>
               <CardContent className="grid gap-4 p-6 sm:grid-cols-3">
                 <div>
                   <p className="text-xs font-semibold uppercase text-muted-foreground">
-                    Gross revenue
+                    {tr("Gross revenue")}
                   </p>
                   <p className="font-display text-2xl font-bold">{formatRwf(revenue.gross)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Refunded</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {tr("Refunded")}
+                  </p>
                   <p className="font-display text-2xl font-bold">{formatRwf(revenue.refunded)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Net</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    {tr("Net")}
+                  </p>
                   <p className="font-display text-2xl font-bold">
                     {formatRwf(revenue.gross - revenue.refunded)}
                   </p>
@@ -387,9 +398,9 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
 
             <Card>
               <CardContent className="p-6">
-                <h2 className="font-display text-lg font-bold">By payment method</h2>
+                <h2 className="font-display text-lg font-bold">{tr("By payment method")}</h2>
                 {revenue.byMethod.length === 0 ? (
-                  <p className="mt-2 text-sm text-muted-foreground">No payments yet.</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{tr("No payments yet.")}</p>
                 ) : (
                   <ul className="mt-3 space-y-2">
                     {revenue.byMethod.map(([method, amount]) => (
@@ -397,7 +408,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
                         key={method}
                         className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-0"
                       >
-                        <span className="font-semibold">{method}</span>
+                        <span className="font-semibold">{tr(method)}</span>
                         <span>{formatRwf(amount)}</span>
                       </li>
                     ))}
@@ -408,7 +419,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
 
             <Card>
               <CardContent className="p-6">
-                <h2 className="font-display text-lg font-bold">Top routes</h2>
+                <h2 className="font-display text-lg font-bold">{tr("Top routes")}</h2>
                 <TopRoutes bookings={bookings ?? []} />
               </CardContent>
             </Card>
@@ -420,6 +431,7 @@ function Dashboard({ isSuper, agencyId }: { isSuper: boolean; agencyId: number |
 }
 
 function TopRoutes({ bookings }: { bookings: AdminBooking[] }) {
+  const { tr, lang } = useI18n();
   const rows = useMemo(() => {
     const map = new Map<string, { seats: number; amount: number }>();
     for (const b of bookings) {
@@ -432,7 +444,7 @@ function TopRoutes({ bookings }: { bookings: AdminBooking[] }) {
   }, [bookings]);
 
   if (rows.length === 0)
-    return <p className="mt-2 text-sm text-muted-foreground">No confirmed bookings yet.</p>;
+    return <p className="mt-2 text-sm text-muted-foreground">{tr("No confirmed bookings yet.")}</p>;
 
   return (
     <ul className="mt-3 space-y-2">
@@ -443,7 +455,7 @@ function TopRoutes({ bookings }: { bookings: AdminBooking[] }) {
         >
           <span className="font-semibold">{route}</span>
           <span className="text-muted-foreground">
-            {v.seats} seats · {formatRwf(v.amount)}
+            {v.seats} {tr("Seats")} · {formatRwf(v.amount)}
           </span>
         </li>
       ))}
@@ -452,6 +464,7 @@ function TopRoutes({ bookings }: { bookings: AdminBooking[] }) {
 }
 
 function BookingRow({ booking: b }: { booking: AdminBooking }) {
+  const { tr, lang } = useI18n();
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
@@ -467,7 +480,7 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
                     : "secondary"
               }
             >
-              {b.status}
+              {tr(b.status)}
             </Badge>
           </div>
           <p className="mt-1 font-display text-lg font-bold">
@@ -488,7 +501,7 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
         <div className="text-right">
           <p className="font-display text-lg font-bold">{formatRwf(b.total_amount)}</p>
           <p className="text-xs text-muted-foreground">
-            {b.tickets.filter((t) => t.status === "USED").length}/{b.tickets.length} boarded
+            {b.tickets.filter((t) => t.status === "USED").length}/{b.tickets.length} {tr("boarded")}
           </p>
         </div>
       </CardContent>
@@ -497,19 +510,20 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
 }
 
 function VerifyPanel({ onVerified }: { onVerified: () => void }) {
+  const { tr, lang } = useI18n();
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
 
   const lookup = useMutation({
     mutationFn: () => findTicketByCode(code),
-    onSuccess: (t) => setMessage(t ? null : "No ticket found with that code."),
+    onSuccess: (t) => setMessage(t ? null : tr("No ticket found with that code.")),
     onError: (e: Error) => setMessage(e.message),
   });
 
   const board = useMutation({
     mutationFn: (id: string) => markTicketUsed(id),
     onSuccess: () => {
-      setMessage("Ticket marked as boarded.");
+      setMessage(tr("Ticket marked as boarded."));
       lookup.mutate();
       onVerified();
     },
@@ -522,9 +536,11 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
     <div className="space-y-4">
       <Card>
         <CardContent className="p-6">
-          <h2 className="font-display text-lg font-bold">Verify a boarding ticket</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Verify a boarding ticket")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter the ticket code printed on the passenger's ticket (e.g. KTB-2026-000123-A1).
+            {tr(
+              "Enter the ticket code printed on the passenger's ticket (e.g. KTB-2026-000123-A1).",
+            )}
           </p>
           <form
             className="mt-4 flex flex-wrap gap-2"
@@ -537,11 +553,11 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Ticket code"
+              placeholder={tr("Ticket code")}
               className="max-w-sm font-mono"
             />
             <Button type="submit" disabled={lookup.isPending || !code.trim()}>
-              {lookup.isPending ? "Checking…" : "Check ticket"}
+              {lookup.isPending ? tr("Checking…") : tr("Check ticket")}
             </Button>
           </form>
           {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
@@ -560,7 +576,8 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {formatDate(ticket.booking.trip.travel_date)} ·{" "}
-                  {formatTime(ticket.booking.trip.departure_time)} · Seat {ticket.seat_label}
+                  {formatTime(ticket.booking.trip.departure_time)} · {tr("Seat")}{" "}
+                  {ticket.seat_label}
                 </p>
                 <p className="mt-2 text-sm">
                   {ticket.booking.passenger_name} · {ticket.booking.passenger_phone}
@@ -576,10 +593,11 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
                         : "destructive"
                   }
                 >
-                  {ticket.status}
+                  {tr(ticket.status)}
                 </Badge>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Booking {ticket.booking.booking_ref} · {ticket.booking.status}
+                  {tr("Booking")}
+                  {ticket.booking.booking_ref} · {tr(ticket.booking.status)}
                 </p>
               </div>
             </div>
@@ -587,13 +605,13 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
             <div className="mt-4">
               {ticket.status === "VALID" && ticket.booking.status === "CONFIRMED" ? (
                 <Button onClick={() => board.mutate(ticket.id)} disabled={board.isPending}>
-                  {board.isPending ? "Saving…" : "Mark as boarded"}
+                  {board.isPending ? tr("Saving…") : tr("Mark as boarded")}
                 </Button>
               ) : (
                 <p className="text-sm font-semibold text-muted-foreground">
                   {ticket.status === "USED"
-                    ? `Already boarded${ticket.used_at ? ` on ${new Date(ticket.used_at).toLocaleString("en-GB")}` : ""}.`
-                    : "This ticket cannot be used for boarding."}
+                    ? `${tr("alreadyBoarded")}${ticket.used_at ? ` · ${new Date(ticket.used_at).toLocaleString()}` : ""}.`
+                    : tr("This ticket cannot be used for boarding.")}
                 </p>
               )}
             </div>
@@ -605,6 +623,7 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
 }
 
 function AccessManager() {
+  const { tr, lang } = useI18n();
   const queryClient = useQueryClient();
   const { data: agencies } = useQuery(agenciesQuery);
   const { data: staff, isLoading } = useQuery(staffDirectoryQuery);
@@ -615,11 +634,11 @@ function AccessManager() {
     mutationFn: async (fn: () => Promise<void>) => fn(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin"] });
-      toast.success("Permissions updated");
+      toast.success(tr("Permissions updated"));
       setPending(null);
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : "Could not update permissions");
+      toast.error(e instanceof Error ? e.message : tr("Could not update permissions"));
       setPending(null);
     },
   });
@@ -628,9 +647,7 @@ function AccessManager() {
     const q = filter.trim().toLowerCase();
     return (staff ?? []).filter(
       (s) =>
-        !q ||
-        s.full_name.toLowerCase().includes(q) ||
-        (s.email ?? "").toLowerCase().includes(q),
+        !q || s.full_name.toLowerCase().includes(q) || (s.email ?? "").toLowerCase().includes(q),
     );
   }, [staff, filter]);
 
@@ -638,16 +655,17 @@ function AccessManager() {
     <div className="space-y-4">
       <Card>
         <CardContent className="space-y-1 p-5">
-          <h2 className="font-display text-lg font-bold">Roles &amp; permissions</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Roles &amp; permissions")}</h2>
           <p className="text-sm text-muted-foreground">
-            Super admins control every agency. Assign an agency admin so they can only manage
-            bookings, tickets and revenue for their own agency.
+            {tr(
+              "Super admins control every agency. Assign an agency admin so they can only manage bookings, tickets and revenue for their own agency.",
+            )}
           </p>
         </CardContent>
       </Card>
 
       <Input
-        placeholder="Search staff by name or email"
+        placeholder={tr("Search staff by name or email")}
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
         className="max-w-sm"
@@ -668,16 +686,16 @@ function AccessManager() {
                     <p className="font-semibold">{person.full_name || "Unnamed user"}</p>
                     <p className="text-xs text-muted-foreground">{person.email ?? "—"}</p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {isSuperUser ? <Badge>Super admin</Badge> : null}
+                      {isSuperUser ? <Badge>{tr("Super admin")}</Badge> : null}
                       {agencyRole ? (
                         <Badge variant="secondary">
-                          Agency admin ·{" "}
+                          {tr("Agency admin")} ·{" "}
                           {(agencies ?? []).find((a) => a.id === agencyRole.agency_id)?.name ??
-                            "unassigned"}
+                            tr("unassigned")}
                         </Badge>
                       ) : null}
                       {!isSuperUser && !agencyRole ? (
-                        <Badge variant="outline">Passenger</Badge>
+                        <Badge variant="outline">{tr("Passenger")}</Badge>
                       ) : null}
                     </div>
                   </div>
@@ -697,10 +715,10 @@ function AccessManager() {
                         );
                       }}
                     >
-                      <option value="">No agency access</option>
+                      <option value="">{tr("No agency access")}</option>
                       {(agencies ?? []).map((a) => (
                         <option key={a.id} value={a.id}>
-                          Admin · {a.name}
+                          {tr("Admin")} · {a.name}
                         </option>
                       ))}
                     </select>
@@ -718,7 +736,7 @@ function AccessManager() {
                         );
                       }}
                     >
-                      {isSuperUser ? "Remove super admin" : "Make super admin"}
+                      {isSuperUser ? tr("Remove super admin") : tr("Make super admin")}
                     </Button>
                   </div>
                 </CardContent>
@@ -726,7 +744,9 @@ function AccessManager() {
             );
           })}
           {rows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No accounts found.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {tr("No accounts found.")}
+            </p>
           ) : null}
         </div>
       )}
@@ -737,20 +757,22 @@ function AccessManager() {
 type AgencyOption = { id: number; name: string };
 
 function useAdminMutation(onDone?: () => void) {
+  const { tr, lang } = useI18n();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (fn: () => Promise<unknown>) => fn(),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin"] });
-      toast.success("Saved");
+      toast.success(tr("Saved"));
       onDone?.();
     },
     onError: (e: unknown) =>
-      toast.error(e instanceof Error ? e.message : "Could not save the change"),
+      toast.error(e instanceof Error ? e.message : tr("Could not save the change")),
   });
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const { tr, lang } = useI18n();
   return (
     <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
       {label}
@@ -771,15 +793,16 @@ function AgencyPicker({
   value: number | "";
   onChange: (v: number) => void;
 }) {
+  const { tr, lang } = useI18n();
   if (agencies.length <= 1) return null;
   return (
-    <Field label="Agency">
+    <Field label={tr("Agency")}>
       <select
         className={selectClass}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       >
-        <option value="">Select agency</option>
+        <option value="">{tr("Select agency")}</option>
         {agencies.map((a) => (
           <option key={a.id} value={a.id}>
             {a.name}
@@ -791,6 +814,7 @@ function AgencyPicker({
 }
 
 function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const { tr, lang } = useI18n();
   const { data: buses, isLoading } = useQuery(agencyBusesQuery(scope));
   const mutate = useAdminMutation();
   const [agency, setAgency] = useState<number | "">(agencies[0]?.id ?? "");
@@ -800,12 +824,18 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const [capacity, setCapacity] = useState(30);
   const [editing, setEditing] = useState<number | null>(null);
 
-  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+  const agencyId = agencies.length === 1 ? (agencies[0]?.id ?? "") : agency;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) { toast.error("Choose an agency first"); return; }
-    if (!busNumber.trim() || !plate.trim()) { toast.error("Bus number and plate are required"); return; }
+    if (!agencyId) {
+      toast.error(tr("Choose an agency first"));
+      return;
+    }
+    if (!busNumber.trim() || !plate.trim()) {
+      toast.error(tr("Bus number and plate are required"));
+      return;
+    }
     mutate.mutate(async () => {
       await createBus({
         agency_id: agencyId,
@@ -823,23 +853,37 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
     <div className="space-y-4">
       <Card>
         <CardContent className="p-5">
-          <h2 className="font-display text-lg font-bold">Add a bus</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Add a bus")}</h2>
           <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
             <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
-            <Field label="Bus number">
-              <Input value={busNumber} onChange={(e) => setBusNumber(e.target.value)} placeholder="HRZ-07" className="w-32" />
+            <Field label={tr("Bus number")}>
+              <Input
+                value={busNumber}
+                onChange={(e) => setBusNumber(e.target.value)}
+                placeholder="HRZ-07"
+                className="w-32"
+              />
             </Field>
-            <Field label="Plate">
-              <Input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="RAD 123 B" className="w-36" />
+            <Field label={tr("Plate")}>
+              <Input
+                value={plate}
+                onChange={(e) => setPlate(e.target.value)}
+                placeholder="RAD 123 B"
+                className="w-36"
+              />
             </Field>
-            <Field label="Type">
-              <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
-                <option>Standard</option>
-                <option>Executive</option>
-                <option>Coaster</option>
+            <Field label={tr("Type")}>
+              <select
+                className={selectClass}
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                <option>{tr("Standard")}</option>
+                <option>{tr("Executive")}</option>
+                <option>{tr("Coaster")}</option>
               </select>
             </Field>
-            <Field label="Seats">
+            <Field label={tr("Seats")}>
               <Input
                 type="number"
                 min={8}
@@ -850,7 +894,7 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
               />
             </Field>
             <Button type="submit" disabled={mutate.isPending}>
-              <Bus className="size-4" /> Add bus
+              <Bus className="size-4" /> {tr("Add bus")}
             </Button>
           </form>
         </CardContent>
@@ -861,7 +905,7 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
       ) : (buses ?? []).length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
-            No buses registered yet.
+            {tr("No buses registered yet.")}
           </CardContent>
         </Card>
       ) : (
@@ -888,16 +932,16 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                         {b.bus_number} · {b.plate_number}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {b.bus_type} · {b.seat_capacity} seats
+                        {tr(b.bus_type)} · {b.seat_capacity} {tr("Seats")}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>
-                        {b.status}
+                        {tr(b.status)}
                       </Badge>
                       <select
                         className={selectClass}
-                        value={b.status}
+                        value={tr(b.status)}
                         onChange={(e) =>
                           mutate.mutate(() =>
                             updateBusStatus(
@@ -907,12 +951,12 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                           )
                         }
                       >
-                        <option value="ACTIVE">Active</option>
-                        <option value="MAINTENANCE">Maintenance</option>
-                        <option value="INACTIVE">Inactive</option>
+                        <option value="ACTIVE">{tr("Active")}</option>
+                        <option value="MAINTENANCE">{tr("Maintenance")}</option>
+                        <option value="INACTIVE">{tr("Inactive")}</option>
                       </select>
                       <Button size="sm" variant="outline" onClick={() => setEditing(b.id)}>
-                        Edit
+                        {tr("Edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -934,6 +978,7 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
 }
 
 function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const { tr, lang } = useI18n();
   const { data: routes, isLoading } = useQuery(agencyRoutesQuery(scope));
   const { data: stations } = useQuery(stationsQuery);
   const mutate = useAdminMutation();
@@ -948,9 +993,14 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) { toast.error("Choose an agency first"); return; }
-    if (!origin || !destination || origin === destination)
-      { toast.error("Pick a different origin and destination"); return; }
+    if (!agencyId) {
+      toast.error(tr("Choose an agency first"));
+      return;
+    }
+    if (!origin || !destination || origin === destination) {
+      toast.error(tr("Pick a different origin and destination"));
+      return;
+    }
     mutate.mutate(() =>
       createRoute({
         agency_id: agencyId,
@@ -966,12 +1016,16 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
     <div className="space-y-4">
       <Card>
         <CardContent className="p-5">
-          <h2 className="font-display text-lg font-bold">Add a route</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Add a route")}</h2>
           <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
             <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
-            <Field label="From">
-              <select className={selectClass} value={origin} onChange={(e) => setOrigin(Number(e.target.value))}>
-                <option value="">Origin</option>
+            <Field label={tr("From")}>
+              <select
+                className={selectClass}
+                value={origin}
+                onChange={(e) => setOrigin(Number(e.target.value))}
+              >
+                <option value="">{tr("Origin")}</option>
                 {(stations ?? []).map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.city} · {s.name}
@@ -979,13 +1033,13 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
                 ))}
               </select>
             </Field>
-            <Field label="To">
+            <Field label={tr("To")}>
               <select
                 className={selectClass}
                 value={destination}
                 onChange={(e) => setDestination(Number(e.target.value))}
               >
-                <option value="">Destination</option>
+                <option value="">{tr("Destination")}</option>
                 {(stations ?? []).map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.city} · {s.name}
@@ -993,14 +1047,26 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
                 ))}
               </select>
             </Field>
-            <Field label="Distance (km)">
-              <Input type="number" min={1} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-28" />
+            <Field label={tr("Distance (km)")}>
+              <Input
+                type="number"
+                min={1}
+                value={distance}
+                onChange={(e) => setDistance(Number(e.target.value))}
+                className="w-28"
+              />
             </Field>
-            <Field label="Duration (min)">
-              <Input type="number" min={10} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-28" />
+            <Field label={tr("Duration (min)")}>
+              <Input
+                type="number"
+                min={10}
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value))}
+                className="w-28"
+              />
             </Field>
             <Button type="submit" disabled={mutate.isPending}>
-              <RouteIcon className="size-4" /> Add route
+              <RouteIcon className="size-4" /> {tr("Add route")}
             </Button>
           </form>
         </CardContent>
@@ -1039,17 +1105,17 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={r.is_active ? "default" : "secondary"}>
-                        {r.is_active ? "Active" : "Paused"}
+                        {r.is_active ? tr("Active") : tr("Paused")}
                       </Badge>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => mutate.mutate(() => toggleRoute(r.id, !r.is_active))}
                       >
-                        {r.is_active ? "Pause" : "Activate"}
+                        {r.is_active ? tr("Pause") : tr("Activate")}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setEditing(r.id)}>
-                        Edit
+                        {tr("Edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -1067,7 +1133,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
           {(routes ?? []).length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-sm text-muted-foreground">
-                No routes yet.
+                {tr("No routes yet.")}
               </CardContent>
             </Card>
           ) : null}
@@ -1078,6 +1144,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
 }
 
 function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: AgencyOption[] }) {
+  const { tr, lang } = useI18n();
   const today = todayISO();
   const { data: trips, isLoading } = useQuery(agencyTripsQuery(scope, today));
   const { data: buses } = useQuery(agencyBusesQuery(scope));
@@ -1099,8 +1166,14 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!agencyId) { toast.error("Choose an agency first"); return; }
-    if (!busId || !routeId) { toast.error("Pick a bus and a route"); return; }
+    if (!agencyId) {
+      toast.error(tr("Choose an agency first"));
+      return;
+    }
+    if (!busId || !routeId) {
+      toast.error(tr("Pick a bus and a route"));
+      return;
+    }
     mutate.mutate(() =>
       createTrip({
         agency_id: agencyId,
@@ -1118,12 +1191,16 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
     <div className="space-y-4">
       <Card>
         <CardContent className="p-5">
-          <h2 className="font-display text-lg font-bold">Schedule a trip</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Schedule a trip")}</h2>
           <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={submit}>
             <AgencyPicker agencies={agencies} value={agency} onChange={setAgency} />
-            <Field label="Bus">
-              <select className={selectClass} value={busId} onChange={(e) => setBusId(Number(e.target.value))}>
-                <option value="">Select bus</option>
+            <Field label={tr("Bus")}>
+              <select
+                className={selectClass}
+                value={busId}
+                onChange={(e) => setBusId(Number(e.target.value))}
+              >
+                <option value="">{tr("Select bus")}</option>
                 {busOptions.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.bus_number} ({b.seat_capacity})
@@ -1131,9 +1208,13 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                 ))}
               </select>
             </Field>
-            <Field label="Route">
-              <select className={selectClass} value={routeId} onChange={(e) => setRouteId(Number(e.target.value))}>
-                <option value="">Select route</option>
+            <Field label={tr("Route")}>
+              <select
+                className={selectClass}
+                value={routeId}
+                onChange={(e) => setRouteId(Number(e.target.value))}
+              >
+                <option value="">{tr("Select route")}</option>
                 {routeOptions.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.origin.city} → {r.destination.city}
@@ -1141,20 +1222,43 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                 ))}
               </select>
             </Field>
-            <Field label="Date">
-              <Input type="date" value={date} min={today} onChange={(e) => setDate(e.target.value)} className="w-40" />
+            <Field label={tr("Date")}>
+              <Input
+                type="date"
+                value={date}
+                min={today}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-40"
+              />
             </Field>
-            <Field label="Departs">
-              <Input type="time" value={departure} onChange={(e) => setDeparture(e.target.value)} className="w-28" />
+            <Field label={tr("Departs")}>
+              <Input
+                type="time"
+                value={departure}
+                onChange={(e) => setDeparture(e.target.value)}
+                className="w-28"
+              />
             </Field>
-            <Field label="Arrives">
-              <Input type="time" value={arrival} onChange={(e) => setArrival(e.target.value)} className="w-28" />
+            <Field label={tr("Arrives")}>
+              <Input
+                type="time"
+                value={arrival}
+                onChange={(e) => setArrival(e.target.value)}
+                className="w-28"
+              />
             </Field>
-            <Field label="Price (RWF)">
-              <Input type="number" min={100} step={100} value={price} onChange={(e) => setPrice(Number(e.target.value))} className="w-32" />
+            <Field label={tr("Price (RWF)")}>
+              <Input
+                type="number"
+                min={100}
+                step={100}
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                className="w-32"
+              />
             </Field>
             <Button type="submit" disabled={mutate.isPending}>
-              <CalendarPlus className="size-4" /> Schedule
+              <CalendarPlus className="size-4" /> {tr("Schedule")}
             </Button>
           </form>
         </CardContent>
@@ -1189,24 +1293,19 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
-                        {formatTime(t.arrival_time)} · {t.bus.bus_number} ·{" "}
-                        {formatRwf(t.price_rwf)}
+                        {formatTime(t.arrival_time)} · {t.bus.bus_number} · {formatRwf(t.price_rwf)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <select
                         className={selectClass}
-                        value={t.status}
+                        value={tr(t.status)}
                         onChange={(e) =>
                           mutate.mutate(() =>
                             updateTripStatus(
                               t.id,
                               e.target.value as
-                                | "SCHEDULED"
-                                | "BOARDING"
-                                | "DEPARTED"
-                                | "COMPLETED"
-                                | "CANCELLED",
+                                "SCHEDULED" | "BOARDING" | "DEPARTED" | "COMPLETED" | "CANCELLED",
                             ),
                           )
                         }
@@ -1214,13 +1313,13 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                         {["SCHEDULED", "BOARDING", "DEPARTED", "COMPLETED", "CANCELLED"].map(
                           (s) => (
                             <option key={s} value={s}>
-                              {s.charAt(0) + s.slice(1).toLowerCase()}
+                              {tr(s)}
                             </option>
                           ),
                         )}
                       </select>
                       <Button size="sm" variant="outline" onClick={() => setEditing(t.id)}>
-                        Edit
+                        {tr("Edit")}
                       </Button>
                       <Button
                         size="sm"
@@ -1238,7 +1337,7 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
           {(trips ?? []).length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center text-sm text-muted-foreground">
-                No upcoming trips scheduled.
+                {tr("No upcoming trips scheduled.")}
               </CardContent>
             </Card>
           ) : null}
@@ -1251,13 +1350,14 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
 type Station = { id: number; name: string; city: string };
 
 function EditorActions({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
+  const { tr, lang } = useI18n();
   return (
     <div className="flex items-end gap-2">
       <Button type="submit" size="sm" disabled={pending}>
-        Save
+        {tr("Save")}
       </Button>
       <Button type="button" size="sm" variant="outline" onClick={onCancel}>
-        Cancel
+        {tr("Cancel")}
       </Button>
     </div>
   );
@@ -1274,6 +1374,7 @@ function BusEditor({
   onCancel: () => void;
   onSave: (patch: { bus_number: string; plate_number: string; bus_type: string }) => void;
 }) {
+  const { tr, lang } = useI18n();
   const [busNumber, setBusNumber] = useState(bus.bus_number);
   const [plate, setPlate] = useState(bus.plate_number);
   const [type, setType] = useState(bus.bus_type);
@@ -1284,7 +1385,7 @@ function BusEditor({
       onSubmit={(e) => {
         e.preventDefault();
         if (!busNumber.trim() || !plate.trim()) {
-          toast.error("Bus number and plate are required");
+          toast.error(tr("Bus number and plate are required"));
           return;
         }
         onSave({
@@ -1294,21 +1395,21 @@ function BusEditor({
         });
       }}
     >
-      <Field label="Bus number">
+      <Field label={tr("Bus number")}>
         <Input value={busNumber} onChange={(e) => setBusNumber(e.target.value)} className="w-32" />
       </Field>
-      <Field label="Plate">
+      <Field label={tr("Plate")}>
         <Input value={plate} onChange={(e) => setPlate(e.target.value)} className="w-36" />
       </Field>
-      <Field label="Type">
+      <Field label={tr("Type")}>
         <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
-          <option>Standard</option>
-          <option>Executive</option>
-          <option>Coaster</option>
+          <option>{tr("Standard")}</option>
+          <option>{tr("Executive")}</option>
+          <option>{tr("Coaster")}</option>
         </select>
       </Field>
       <p className="text-xs text-muted-foreground">
-        Seat map is fixed at {bus.seat_capacity} seats.
+        {tr("seatMapFixed", { count: bus.seat_capacity })}
       </p>
       <EditorActions pending={pending} onCancel={onCancel} />
     </form>
@@ -1333,6 +1434,7 @@ function RouteEditor({
     duration_minutes: number;
   }) => void;
 }) {
+  const { tr, lang } = useI18n();
   const [origin, setOrigin] = useState(route.origin_station_id);
   const [destination, setDestination] = useState(route.destination_station_id);
   const [distance, setDistance] = useState(route.distance_km);
@@ -1344,7 +1446,7 @@ function RouteEditor({
       onSubmit={(e) => {
         e.preventDefault();
         if (!origin || !destination || origin === destination) {
-          toast.error("Pick a different origin and destination");
+          toast.error(tr("Pick a different origin and destination"));
           return;
         }
         onSave({
@@ -1355,7 +1457,7 @@ function RouteEditor({
         });
       }}
     >
-      <Field label="From">
+      <Field label={tr("From")}>
         <select
           className={selectClass}
           value={origin}
@@ -1368,7 +1470,7 @@ function RouteEditor({
           ))}
         </select>
       </Field>
-      <Field label="To">
+      <Field label={tr("To")}>
         <select
           className={selectClass}
           value={destination}
@@ -1381,7 +1483,7 @@ function RouteEditor({
           ))}
         </select>
       </Field>
-      <Field label="Distance (km)">
+      <Field label={tr("Distance (km)")}>
         <Input
           type="number"
           min={1}
@@ -1390,7 +1492,7 @@ function RouteEditor({
           className="w-28"
         />
       </Field>
-      <Field label="Duration (min)">
+      <Field label={tr("Duration (min)")}>
         <Input
           type="number"
           min={10}
@@ -1426,6 +1528,7 @@ function TripEditor({
     price_rwf: number;
   }) => void;
 }) {
+  const { tr, lang } = useI18n();
   const [busId, setBusId] = useState(trip.bus_id);
   const [routeId, setRouteId] = useState(trip.route_id);
   const [date, setDate] = useState(trip.travel_date);
@@ -1439,7 +1542,7 @@ function TripEditor({
       onSubmit={(e) => {
         e.preventDefault();
         if (!busId || !routeId) {
-          toast.error("Pick a bus and a route");
+          toast.error(tr("Pick a bus and a route"));
           return;
         }
         onSave({
@@ -1452,7 +1555,7 @@ function TripEditor({
         });
       }}
     >
-      <Field label="Bus">
+      <Field label={tr("Bus")}>
         <select
           className={selectClass}
           value={busId}
@@ -1465,7 +1568,7 @@ function TripEditor({
           ))}
         </select>
       </Field>
-      <Field label="Route">
+      <Field label={tr("Route")}>
         <select
           className={selectClass}
           value={routeId}
@@ -1478,7 +1581,7 @@ function TripEditor({
           ))}
         </select>
       </Field>
-      <Field label="Date">
+      <Field label={tr("Date")}>
         <Input
           type="date"
           value={date}
@@ -1486,7 +1589,7 @@ function TripEditor({
           className="w-40"
         />
       </Field>
-      <Field label="Departs">
+      <Field label={tr("Departs")}>
         <Input
           type="time"
           value={departure}
@@ -1494,7 +1597,7 @@ function TripEditor({
           className="w-28"
         />
       </Field>
-      <Field label="Arrives">
+      <Field label={tr("Arrives")}>
         <Input
           type="time"
           value={arrival}
@@ -1502,7 +1605,7 @@ function TripEditor({
           className="w-28"
         />
       </Field>
-      <Field label="Price (RWF)">
+      <Field label={tr("Price (RWF)")}>
         <Input
           type="number"
           min={100}
@@ -1517,9 +1620,9 @@ function TripEditor({
   );
 }
 
-function exportBookingsCsv(bookings: AdminBooking[], label: string) {
+function exportBookingsCsv(bookings: AdminBooking[], label: string, tr: (text: string) => string) {
   if (bookings.length === 0) {
-    toast.error("Nothing to export yet");
+    toast.error(tr("Nothing to export yet"));
     return;
   }
   const header = [
@@ -1534,9 +1637,10 @@ function exportBookingsCsv(bookings: AdminBooking[], label: string) {
     "Seats",
     "Amount (RWF)",
   ];
+  const translatedHeader = header.map((label) => tr(label));
   const rows = bookings.map((b) => [
     b.booking_ref,
-    b.status,
+    tr(b.status),
     b.passenger_name,
     b.passenger_phone,
     b.trip.agency.name,
@@ -1546,7 +1650,7 @@ function exportBookingsCsv(bookings: AdminBooking[], label: string) {
     String(b.seat_count),
     String(b.total_amount),
   ]);
-  const csv = [header, ...rows]
+  const csv = [translatedHeader, ...rows]
     .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
     .join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -1558,6 +1662,7 @@ function exportBookingsCsv(bookings: AdminBooking[], label: string) {
 }
 
 function NetworkManager() {
+  const { tr, lang } = useI18n();
   const qc = useQueryClient();
   const { data: agencies } = useQuery(allAgenciesQuery);
   const { data: stations } = useQuery(allStationsQuery);
@@ -1578,7 +1683,7 @@ function NetworkManager() {
       }),
     onSuccess: () => {
       setAForm({ name: "", code: "", phone: "", email: "" });
-      toast.success("Agency added");
+      toast.success(tr("Agency added"));
       void refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1589,7 +1694,7 @@ function NetworkManager() {
       updateAgency(v.id, v.patch),
     onSuccess: () => {
       setEditAgency(null);
-      toast.success("Agency updated");
+      toast.success(tr("Agency updated"));
       void refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1610,7 +1715,7 @@ function NetworkManager() {
       }),
     onSuccess: () => {
       setSForm({ name: "", city: "", code: "" });
-      toast.success("Station added");
+      toast.success(tr("Station added"));
       void refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1621,7 +1726,7 @@ function NetworkManager() {
       updateStation(v.id, v.patch),
     onSuccess: () => {
       setEditStation(null);
-      toast.success("Station updated");
+      toast.success(tr("Station updated"));
       void refresh();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1637,40 +1742,40 @@ function NetworkManager() {
     <div className="space-y-6">
       <Card>
         <CardContent className="space-y-4 p-5">
-          <h2 className="font-display text-lg font-bold">Bus agencies</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Bus agencies")}</h2>
           <form
             className="grid gap-2 sm:grid-cols-5"
             onSubmit={(e) => {
               e.preventDefault();
               if (!aForm.name.trim() || !aForm.code.trim()) {
-                toast.error("Name and code are required");
+                toast.error(tr("Name and code are required"));
                 return;
               }
               addAgency.mutate();
             }}
           >
             <Input
-              placeholder="Agency name"
+              placeholder={tr("Agency name")}
               value={aForm.name}
               onChange={(e) => setAForm({ ...aForm, name: e.target.value })}
             />
             <Input
-              placeholder="Code"
+              placeholder={tr("Code")}
               value={aForm.code}
               onChange={(e) => setAForm({ ...aForm, code: e.target.value })}
             />
             <Input
-              placeholder="Phone"
+              placeholder={tr("Phone")}
               value={aForm.phone}
               onChange={(e) => setAForm({ ...aForm, phone: e.target.value })}
             />
             <Input
-              placeholder="Email"
+              placeholder={tr("Email")}
               value={aForm.email}
               onChange={(e) => setAForm({ ...aForm, email: e.target.value })}
             />
             <Button type="submit" disabled={addAgency.isPending}>
-              Add agency
+              {tr("Add agency")}
             </Button>
           </form>
 
@@ -1687,7 +1792,9 @@ function NetworkManager() {
                       id: a.id,
                       patch: {
                         name: String(f.get("name") ?? "").trim(),
-                        code: String(f.get("code") ?? "").trim().toUpperCase(),
+                        code: String(f.get("code") ?? "")
+                          .trim()
+                          .toUpperCase(),
                         phone: String(f.get("phone") ?? "").trim() || null,
                         email: String(f.get("email") ?? "").trim() || null,
                       },
@@ -1710,26 +1817,25 @@ function NetworkManager() {
                 >
                   <div>
                     <p className="font-semibold">
-                      {a.name}{" "}
-                      <span className="text-xs text-muted-foreground">({a.code})</span>
+                      {a.name} <span className="text-xs text-muted-foreground">({a.code})</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {a.phone ?? "No phone"} · {a.email ?? "No email"}
+                      {a.phone ?? tr("No phone")} · {a.email ?? tr("No email")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={a.is_active ? "default" : "secondary"}>
-                      {a.is_active ? "Active" : "Hidden"}
+                      {a.is_active ? tr("Active") : tr("Hidden")}
                     </Badge>
                     <Button size="sm" variant="outline" onClick={() => setEditAgency(a.id)}>
-                      Edit
+                      {tr("Edit")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => flipAgency.mutate({ id: a.id, active: !a.is_active })}
                     >
-                      {a.is_active ? "Hide" : "Show"}
+                      {a.is_active ? tr("Hide") : tr("Show")}
                     </Button>
                   </div>
                 </div>
@@ -1741,35 +1847,35 @@ function NetworkManager() {
 
       <Card>
         <CardContent className="space-y-4 p-5">
-          <h2 className="font-display text-lg font-bold">Stations</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Stations")}</h2>
           <form
             className="grid gap-2 sm:grid-cols-4"
             onSubmit={(e) => {
               e.preventDefault();
               if (!sForm.name.trim() || !sForm.city.trim() || !sForm.code.trim()) {
-                toast.error("Name, city and code are required");
+                toast.error(tr("Name, city and code are required"));
                 return;
               }
               addStation.mutate();
             }}
           >
             <Input
-              placeholder="Station name"
+              placeholder={tr("Station name")}
               value={sForm.name}
               onChange={(e) => setSForm({ ...sForm, name: e.target.value })}
             />
             <Input
-              placeholder="City"
+              placeholder={tr("City")}
               value={sForm.city}
               onChange={(e) => setSForm({ ...sForm, city: e.target.value })}
             />
             <Input
-              placeholder="Code"
+              placeholder={tr("Code")}
               value={sForm.code}
               onChange={(e) => setSForm({ ...sForm, code: e.target.value })}
             />
             <Button type="submit" disabled={addStation.isPending}>
-              Add station
+              {tr("Add station")}
             </Button>
           </form>
 
@@ -1787,7 +1893,9 @@ function NetworkManager() {
                       patch: {
                         name: String(f.get("name") ?? "").trim(),
                         city: String(f.get("city") ?? "").trim(),
-                        code: String(f.get("code") ?? "").trim().toUpperCase(),
+                        code: String(f.get("code") ?? "")
+                          .trim()
+                          .toUpperCase(),
                       },
                     });
                   }}
@@ -1813,17 +1921,17 @@ function NetworkManager() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={s.is_active ? "default" : "secondary"}>
-                      {s.is_active ? "Active" : "Hidden"}
+                      {s.is_active ? tr("Active") : tr("Hidden")}
                     </Badge>
                     <Button size="sm" variant="outline" onClick={() => setEditStation(s.id)}>
-                      Edit
+                      {tr("Edit")}
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => flipStation.mutate({ id: s.id, active: !s.is_active })}
                     >
-                      {s.is_active ? "Hide" : "Show"}
+                      {s.is_active ? tr("Hide") : tr("Show")}
                     </Button>
                   </div>
                 </div>
