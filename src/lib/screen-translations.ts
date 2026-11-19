@@ -225,11 +225,6 @@ export const SCREEN_TRANSLATIONS: Record<string, { en: string; rw: string; fr: s
     rw: "Uburenganzira ntibwashoboye kuvugururwa",
     fr: "Impossible de modifier les autorisations",
   },
-  "Roles &amp; permissions": {
-    en: "Roles &amp; permissions",
-    rw: "Inshingano n'uburenganzira",
-    fr: "Rôles et autorisations",
-  },
   "Super admins control every agency. Assign an agency admin so they can only manage bookings, tickets and revenue for their own agency.":
     {
       en: "Super admins control every agency. Assign an agency admin so they can only manage bookings, tickets and revenue for their own agency.",
@@ -945,7 +940,7 @@ export const SCREEN_TRANSLATIONS: Record<string, { en: string; rw: string; fr: s
     },
   "Enter the passenger name and phone number to continue.": {
     en: "Enter the passenger name and phone number to continue.",
-    rw: "Andika amazina n'inimero ya telefoni by'umugenzi kugira ngo ukomeze.",
+    rw: "Andika amazina na nimero ya telefoni by'umugenzi kugira ngo ukomeze.",
     fr: "Saisissez le nom et le numéro de téléphone du passager pour continuer.",
   },
   "Loading other departures…": {
@@ -957,11 +952,6 @@ export const SCREEN_TRANSLATIONS: Record<string, { en: string; rw: string; fr: s
     en: "Other departures could not be loaded.",
     rw: "Izindi ngendo ntizashoboye gufunguka.",
     fr: "Impossible de charger les autres départs.",
-  },
-  "Today&rsquo;s departures on this route": {
-    en: "Today&rsquo;s departures on this route",
-    rw: "Ingendo z'uyu munsi kuri iyi nzira",
-    fr: "Départs du jour sur cette ligne",
   },
   "Seats left": {
     en: "Seats left",
@@ -1065,7 +1055,7 @@ export const SCREEN_TRANSLATIONS: Record<string, { en: string; rw: string; fr: s
   },
   "This booking was cancelled. The seats have been released.": {
     en: "This booking was cancelled. The seats have been released.",
-    rw: "Iyi tike yahagaritswe. Intebe zasubijwe ku isoko.",
+    rw: "Iyi tike yahagaritswe. Intebe zongeye kuboneka.",
     fr: "Cette réservation a été annulée. Les sièges ont été libérés.",
   },
   "Choose payment method": {
@@ -1257,5 +1247,35 @@ export const SCREEN_TRANSLATIONS: Record<string, { en: string; rw: string; fr: s
     en: "Paid with {method} · reference {ref}",
     rw: "Yishyuwe hakoreshejwe {method} · nimero {ref}",
     fr: "Payé avec {method} · référence {ref}",
+  },
+  "Roles & permissions": {
+    en: "Roles & permissions",
+    rw: "Inshingano n'uburenganzira",
+    fr: "Rôles et autorisations",
+  },
+  "Today’s departures on this route": {
+    en: "Today’s departures on this route",
+    rw: "Ingendo z'uyu munsi kuri iyi nzira",
+    fr: "Départs du jour sur cette ligne",
+  },
+  "Could not verify this ticket. Please try again.": {
+    en: "Could not verify this ticket. Please try again.",
+    rw: "Itike ntiyashoboye kugenzurwa. Ongera ugerageze.",
+    fr: "Impossible de vérifier ce billet. Veuillez réessayer.",
+  },
+  MTN_MOMO: {
+    en: "MTN Mobile Money",
+    rw: "MTN Mobile Money",
+    fr: "MTN Mobile Money",
+  },
+  AIRTEL_MONEY: {
+    en: "Airtel Money",
+    rw: "Airtel Money",
+    fr: "Airtel Money",
+  },
+  "Ticket QR code — scan at boarding": {
+    en: "Ticket QR code — scan at boarding",
+    rw: "Kode QR y’itike — isuzumwa igihe winjira muri bisi",
+    fr: "Code QR du billet — à scanner à l’embarquement",
   },
 };

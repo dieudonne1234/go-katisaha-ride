@@ -55,9 +55,10 @@ function SeatBox({
   state: "available" | "selected" | "booked";
   onClick: () => void;
 }) {
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   return (
-    <button
+    <Button
+      variant="outline"
       type="button"
       disabled={state === "booked"}
       onClick={onClick}
@@ -72,7 +73,7 @@ function SeatBox({
       )}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -155,7 +156,11 @@ function TripPage() {
       void navigate({ to: "/booking/$bookingId", params: { bookingId: data.id } });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : tr("Could not reserve those seats"));
+      toast.error(
+        lang === "en" && error instanceof Error
+          ? error.message
+          : tr("Could not reserve those seats"),
+      );
       void queryClient.invalidateQueries({ queryKey: ["trip", id] });
       setSelected([]);
     },
@@ -217,12 +222,12 @@ function TripPage() {
               <div className="mt-3 flex flex-wrap gap-4 text-sm text-surface-foreground/85">
                 <span className="flex items-center gap-1.5">
                   <Clock className="size-4" />
-                  {formatTime(trip.departure_time)} – {formatTime(trip.arrival_time)} (
-                  {durationLabel(trip.route.duration_minutes)})
+                  {formatTime(trip.departure_time, lang)} – {formatTime(trip.arrival_time, lang)} (
+                  {durationLabel(trip.route.duration_minutes, lang)})
                 </span>
                 <span className="flex items-center gap-1.5">
                   <MapPin className="size-4" />
-                  {formatDate(trip.travel_date)}
+                  {formatDate(trip.travel_date, lang)}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Bus className="size-4" />
@@ -400,11 +405,11 @@ function TripPage() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{tr("Date")}</dt>
-                  <dd className="font-semibold">{formatDate(trip.travel_date)}</dd>
+                  <dd className="font-semibold">{formatDate(trip.travel_date, lang)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{tr("Departure")}</dt>
-                  <dd className="font-semibold">{formatTime(trip.departure_time)}</dd>
+                  <dd className="font-semibold">{formatTime(trip.departure_time, lang)}</dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">{tr("Seats")}</dt>
@@ -511,11 +516,9 @@ function RouteTimetable({
   return (
     <Card className="mb-6">
       <CardContent className="p-5">
-        <h2 className="font-display text-lg font-bold">
-          {tr("Today&rsquo;s departures on this route")}
-        </h2>
+        <h2 className="font-display text-lg font-bold">{tr("Today’s departures on this route")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {formatDate(date)} — {tr("compareFares")}
+          {formatDate(date, lang)} — {tr("compareFares")}
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
@@ -538,8 +541,10 @@ function RouteTimetable({
                     t.id === currentTripId && "bg-secondary/50",
                   )}
                 >
-                  <td className="py-2.5 pr-3 font-semibold">{formatTime(t.departure_time)}</td>
-                  <td className="py-2.5 pr-3">{formatTime(t.arrival_time)}</td>
+                  <td className="py-2.5 pr-3 font-semibold">
+                    {formatTime(t.departure_time, lang)}
+                  </td>
+                  <td className="py-2.5 pr-3">{formatTime(t.arrival_time, lang)}</td>
                   <td className="py-2.5 pr-3">{t.agency.name}</td>
                   <td className="py-2.5 pr-3">{t.available_seats}</td>
                   <td className="py-2.5 pr-3 font-semibold">{formatRwf(t.price_rwf)}</td>

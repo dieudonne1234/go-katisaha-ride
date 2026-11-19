@@ -85,7 +85,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Stat({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   return (
     <Card>
       <CardContent className="flex items-center gap-3 p-5">
@@ -469,7 +469,7 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
     <Card>
       <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="min-w-52">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs font-bold">{b.booking_ref}</span>
             <Badge
               variant={
@@ -487,7 +487,7 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
             {b.trip.route.origin.city} → {b.trip.route.destination.city}
           </p>
           <p className="text-xs text-muted-foreground">
-            {formatDate(b.trip.travel_date)} · {formatTime(b.trip.departure_time)} ·{" "}
+            {formatDate(b.trip.travel_date, lang)} · {formatTime(b.trip.departure_time, lang)} ·{" "}
             {b.trip.bus.bus_number} ({b.trip.bus.plate_number})
           </p>
         </div>
@@ -495,7 +495,7 @@ function BookingRow({ booking: b }: { booking: AdminBooking }) {
           <p className="font-semibold">{b.passenger_name}</p>
           <p className="text-muted-foreground">{b.passenger_phone}</p>
           <p className="text-muted-foreground">
-            Seats: {b.seats.map((s) => s.seat_label).join(", ") || "—"}
+            {tr("Seats")}: {b.seats.map((s) => s.seat_label).join(", ") || "—"}
           </p>
         </div>
         <div className="text-right">
@@ -516,18 +516,20 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
 
   const lookup = useMutation({
     mutationFn: () => findTicketByCode(code),
-    onSuccess: (t) => setMessage(t ? null : tr("No ticket found with that code.")),
-    onError: (e: Error) => setMessage(e.message),
+    onSuccess: (t) => setMessage(t ? null : "No ticket found with that code."),
+    onError: (e: Error) =>
+      setMessage(lang === "en" ? e.message : "Could not verify this ticket. Please try again."),
   });
 
   const board = useMutation({
     mutationFn: (id: string) => markTicketUsed(id),
     onSuccess: () => {
-      setMessage(tr("Ticket marked as boarded."));
+      setMessage("Ticket marked as boarded.");
       lookup.mutate();
       onVerified();
     },
-    onError: (e: Error) => setMessage(e.message),
+    onError: (e: Error) =>
+      setMessage(lang === "en" ? e.message : "Could not verify this ticket. Please try again."),
   });
 
   const ticket = lookup.data;
@@ -560,7 +562,7 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
               {lookup.isPending ? tr("Checking…") : tr("Check ticket")}
             </Button>
           </form>
-          {message ? <p className="mt-3 text-sm text-muted-foreground">{message}</p> : null}
+          {message ? <p className="mt-3 text-sm text-muted-foreground">{tr(message)}</p> : null}
         </CardContent>
       </Card>
 
@@ -575,8 +577,8 @@ function VerifyPanel({ onVerified }: { onVerified: () => void }) {
                   {ticket.booking.trip.route.destination.city}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(ticket.booking.trip.travel_date)} ·{" "}
-                  {formatTime(ticket.booking.trip.departure_time)} · {tr("Seat")}{" "}
+                  {formatDate(ticket.booking.trip.travel_date, lang)} ·{" "}
+                  {formatTime(ticket.booking.trip.departure_time, lang)} · {tr("Seat")}{" "}
                   {ticket.seat_label}
                 </p>
                 <p className="mt-2 text-sm">
@@ -638,7 +640,9 @@ function AccessManager() {
       setPending(null);
     },
     onError: (e: unknown) => {
-      toast.error(e instanceof Error ? e.message : tr("Could not update permissions"));
+      toast.error(
+        lang === "en" && e instanceof Error ? e.message : tr("Could not update permissions"),
+      );
       setPending(null);
     },
   });
@@ -655,7 +659,7 @@ function AccessManager() {
     <div className="space-y-4">
       <Card>
         <CardContent className="space-y-1 p-5">
-          <h2 className="font-display text-lg font-bold">{tr("Roles &amp; permissions")}</h2>
+          <h2 className="font-display text-lg font-bold">{tr("Roles & permissions")}</h2>
           <p className="text-sm text-muted-foreground">
             {tr(
               "Super admins control every agency. Assign an agency admin so they can only manage bookings, tickets and revenue for their own agency.",
@@ -683,7 +687,7 @@ function AccessManager() {
               <Card key={person.id}>
                 <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
                   <div className="min-w-48">
-                    <p className="font-semibold">{person.full_name || "Unnamed user"}</p>
+                    <p className="font-semibold">{person.full_name || tr("Unnamed user")}</p>
                     <p className="text-xs text-muted-foreground">{person.email ?? "—"}</p>
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {isSuperUser ? <Badge>{tr("Super admin")}</Badge> : null}
@@ -702,7 +706,7 @@ function AccessManager() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <select
-                      className="h-9 rounded-lg border border-input bg-background px-2 text-sm"
+                      className="h-9 max-w-full rounded-lg border border-input bg-background px-2 text-sm"
                       disabled={busy}
                       value={agencyRole?.agency_id ?? ""}
                       onChange={(e) => {
@@ -767,7 +771,9 @@ function useAdminMutation(onDone?: () => void) {
       onDone?.();
     },
     onError: (e: unknown) =>
-      toast.error(e instanceof Error ? e.message : tr("Could not save the change")),
+      toast.error(
+        lang === "en" && e instanceof Error ? e.message : tr("Could not save the change"),
+      ),
   });
 }
 
@@ -782,7 +788,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const selectClass =
-  "h-9 rounded-lg border border-input bg-background px-2 text-sm font-normal normal-case text-foreground";
+  "h-9 max-w-full rounded-lg border border-input bg-background px-2 text-sm font-normal normal-case text-foreground";
 
 function AgencyPicker({
   agencies,
@@ -878,9 +884,9 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
-                <option>{tr("Standard")}</option>
-                <option>{tr("Executive")}</option>
-                <option>{tr("Coaster")}</option>
+                <option value="Standard">{tr("Standard")}</option>
+                <option value="Executive">{tr("Executive")}</option>
+                <option value="Coaster">{tr("Coaster")}</option>
               </select>
             </Field>
             <Field label={tr("Seats")}>
@@ -935,13 +941,13 @@ function BusesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                         {tr(b.bus_type)} · {b.seat_capacity} {tr("Seats")}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={b.status === "ACTIVE" ? "default" : "secondary"}>
                         {tr(b.status)}
                       </Badge>
                       <select
                         className={selectClass}
-                        value={tr(b.status)}
+                        value={b.status}
                         onChange={(e) =>
                           mutate.mutate(() =>
                             updateBusStatus(
@@ -989,7 +995,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
   const [duration, setDuration] = useState(120);
   const [editing, setEditing] = useState<number | null>(null);
 
-  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+  const agencyId = agencies.length === 1 ? (agencies[0]?.id ?? "") : agency;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -1103,7 +1109,7 @@ function RoutesPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Age
                         {r.duration_minutes} min
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={r.is_active ? "default" : "secondary"}>
                         {r.is_active ? tr("Active") : tr("Paused")}
                       </Badge>
@@ -1152,7 +1158,7 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
   const mutate = useAdminMutation();
 
   const [agency, setAgency] = useState<number | "">(agencies[0]?.id ?? "");
-  const agencyId = agencies.length === 1 ? agencies[0]!.id : agency;
+  const agencyId = agencies.length === 1 ? (agencies[0]?.id ?? "") : agency;
   const [busId, setBusId] = useState<number | "">("");
   const [routeId, setRouteId] = useState<number | "">("");
   const [date, setDate] = useState(today);
@@ -1292,14 +1298,15 @@ function TripsPanel({ scope, agencies }: { scope: number | "ALL"; agencies: Agen
                         {t.route.origin.city} → {t.route.destination.city}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(t.travel_date)} · {formatTime(t.departure_time)}–
-                        {formatTime(t.arrival_time)} · {t.bus.bus_number} · {formatRwf(t.price_rwf)}
+                        {formatDate(t.travel_date, lang)} · {formatTime(t.departure_time, lang)}–
+                        {formatTime(t.arrival_time, lang)} · {t.bus.bus_number} ·{" "}
+                        {formatRwf(t.price_rwf)}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <select
                         className={selectClass}
-                        value={tr(t.status)}
+                        value={t.status}
                         onChange={(e) =>
                           mutate.mutate(() =>
                             updateTripStatus(
@@ -1403,9 +1410,9 @@ function BusEditor({
       </Field>
       <Field label={tr("Type")}>
         <select className={selectClass} value={type} onChange={(e) => setType(e.target.value)}>
-          <option>{tr("Standard")}</option>
-          <option>{tr("Executive")}</option>
-          <option>{tr("Coaster")}</option>
+          <option value="Standard">{tr("Standard")}</option>
+          <option value="Executive">{tr("Executive")}</option>
+          <option value="Coaster">{tr("Coaster")}</option>
         </select>
       </Field>
       <p className="text-xs text-muted-foreground">
@@ -1686,7 +1693,7 @@ function NetworkManager() {
       toast.success(tr("Agency added"));
       void refresh();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   const saveAgency = useMutation({
@@ -1697,13 +1704,13 @@ function NetworkManager() {
       toast.success(tr("Agency updated"));
       void refresh();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   const flipAgency = useMutation({
     mutationFn: (v: { id: number; active: boolean }) => toggleAgency(v.id, v.active),
     onSuccess: refresh,
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   const addStation = useMutation({
@@ -1718,7 +1725,7 @@ function NetworkManager() {
       toast.success(tr("Station added"));
       void refresh();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   const saveStation = useMutation({
@@ -1729,13 +1736,13 @@ function NetworkManager() {
       toast.success(tr("Station updated"));
       void refresh();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   const flipStation = useMutation({
     mutationFn: (v: { id: number; active: boolean }) => toggleStation(v.id, v.active),
     onSuccess: refresh,
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(lang === "en" ? e.message : tr("Could not save the change")),
   });
 
   return (
@@ -1823,7 +1830,7 @@ function NetworkManager() {
                       {a.phone ?? tr("No phone")} · {a.email ?? tr("No email")}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={a.is_active ? "default" : "secondary"}>
                       {a.is_active ? tr("Active") : tr("Hidden")}
                     </Badge>
@@ -1911,7 +1918,7 @@ function NetworkManager() {
               ) : (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-border p-3"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3"
                 >
                   <div>
                     <p className="font-semibold">{s.name}</p>
@@ -1919,7 +1926,7 @@ function NetworkManager() {
                       {s.city} · {s.code}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={s.is_active ? "default" : "secondary"}>
                       {s.is_active ? tr("Active") : tr("Hidden")}
                     </Badge>

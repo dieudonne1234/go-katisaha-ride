@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { useI18n } from "@/lib/i18n";
 
 export function TicketQr({ value, size = 128 }: { value: string; size?: number }) {
+  const { tr } = useI18n();
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export function TicketQr({ value, size = 128 }: { value: string; size?: number }
       src={src}
       width={size}
       height={size}
-      alt="Ticket QR code — scan at boarding"
+      alt={tr("Ticket QR code — scan at boarding")}
       className="rounded-lg bg-card"
       loading="lazy"
     />

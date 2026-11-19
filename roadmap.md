@@ -1,5 +1,6 @@
 # Trip recommendations
 - [ ] Extend translations to admin dashboards, search, seat selection and payment.
+- [ ] Provide the complete English, Kinyarwanda and French wording for review.
 - [ ] Address standalone Flutter/Dart source request — Flutter apps are unsupported in this environment.
 - [x] Add model-based interpretation and live schedule matching.
 - [x] Add a passenger request form with matching trips and seat-selection links.

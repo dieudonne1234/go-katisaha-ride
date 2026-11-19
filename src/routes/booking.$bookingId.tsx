@@ -57,7 +57,7 @@ function verifyUrl(code: string) {
 }
 
 function BookingPage() {
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   const { bookingId } = Route.useParams();
   const queryClient = useQueryClient();
   const [method, setMethod] = useState<string>("MTN_MOMO");
@@ -80,7 +80,11 @@ function BookingPage() {
       toast.success(tr("Payment successful — your ticket is ready"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : tr("Payment failed, please try again"));
+      toast.error(
+        lang === "en" && error instanceof Error
+          ? error.message
+          : tr("Payment failed, please try again"),
+      );
     },
   });
 
@@ -95,7 +99,11 @@ function BookingPage() {
       toast.success(tr("Booking cancelled"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : tr("Could not cancel this booking"));
+      toast.error(
+        lang === "en" && error instanceof Error
+          ? error.message
+          : tr("Could not cancel this booking"),
+      );
     },
   });
 
@@ -158,11 +166,11 @@ function BookingPage() {
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-surface-foreground/85">
               <span className="flex items-center gap-1.5">
                 <MapPin className="size-4" />
-                {formatDate(trip.travel_date)}
+                {formatDate(trip.travel_date, lang)}
               </span>
               <span className="flex items-center gap-1.5">
                 <Clock className="size-4" />
-                {formatTime(trip.departure_time)}
+                {formatTime(trip.departure_time, lang)}
               </span>
               <span className="flex items-center gap-1.5">
                 <Ticket className="size-4" />
@@ -189,7 +197,7 @@ function BookingPage() {
                     <p className="font-semibold">{tr("Payment received")}</p>
                     <p className="text-muted-foreground">
                       {tr("paymentReceipt", {
-                        method: payment?.method.replaceAll("_", " ") ?? tr("mobile money"),
+                        method: payment ? tr(payment.method) : tr("mobile money"),
                         ref: payment?.reference ?? "—",
                       })}
                     </p>
@@ -258,12 +266,14 @@ function BookingPage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {METHODS.map((m) => (
-                    <button
+                    <Button
+                      variant="outline"
+                      aria-pressed={method === m.id}
                       key={m.id}
                       type="button"
                       onClick={() => setMethod(m.id)}
                       className={cn(
-                        "flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all",
+                        "h-auto min-h-24 w-full items-start justify-start gap-3 whitespace-normal rounded-lg border-2 p-4 text-left transition-all",
                         method === m.id
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/40",
@@ -274,7 +284,7 @@ function BookingPage() {
                         <span className="block text-sm font-semibold">{m.label}</span>
                         <span className="block text-xs text-muted-foreground">{tr(m.hint)}</span>
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
 
@@ -290,7 +300,7 @@ function BookingPage() {
                     </>
                   ) : (
                     <>
-                      <ShieldCheck className="size-4" /> {tr("Pay")}
+                      <ShieldCheck className="size-4" /> {tr("Pay")}{" "}
                       {formatRwf(booking.total_amount)}
                     </>
                   )}

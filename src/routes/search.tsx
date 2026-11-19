@@ -57,7 +57,7 @@ export const Route = createFileRoute("/search")({
 });
 
 function SearchPage() {
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   const params = Route.useSearch();
   const navigate = useNavigate();
   const stationsResult = useQuery(stationsQuery);
@@ -306,7 +306,7 @@ function SearchPage() {
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  {results.length} bus{results.length === 1 ? "" : "es"} {"available"}
+                  {tr("busesAvailable", { count: results.length })}
                 </p>
                 {results.map((trip) => (
                   <Card
@@ -321,15 +321,14 @@ function SearchPage() {
                           </Badge>
                           <Badge variant="secondary">{tr(trip.bus.bus_type)}</Badge>
                           <span className="text-xs font-medium text-muted-foreground">
-                            {tr("Bus")}
-                            {trip.bus.bus_number} · {trip.bus.plate_number}
+                            {tr("Bus")} {trip.bus.bus_number} · {trip.bus.plate_number}
                           </span>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4">
                           <div>
                             <p className="font-display text-2xl font-extrabold">
-                              {formatTime(trip.departure_time)}
+                              {formatTime(trip.departure_time, lang)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {trip.route.origin.name}
@@ -337,7 +336,7 @@ function SearchPage() {
                           </div>
                           <div className="flex flex-col items-center px-2">
                             <span className="text-[11px] font-semibold text-muted-foreground">
-                              {durationLabel(trip.route.duration_minutes)}
+                              {durationLabel(trip.route.duration_minutes, lang)}
                             </span>
                             <div className="my-1 h-px w-16 bg-border" />
                             <span className="text-[11px] text-muted-foreground">
@@ -346,7 +345,7 @@ function SearchPage() {
                           </div>
                           <div>
                             <p className="font-display text-2xl font-extrabold">
-                              {formatTime(trip.arrival_time)}
+                              {formatTime(trip.arrival_time, lang)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {trip.route.destination.name}
